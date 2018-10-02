@@ -7,6 +7,8 @@
 #  MOAB_LIBRARIES - Link these to use MOAB
 #  MOAB_DEFINITIONS - Compiler switches required for using MOAB
 
+message(STATUS "Searching for MOAB...")
+
 find_path(MOAB_CMAKE_CONFIG NAMES MOABConfig.cmake
           HINTS ${MOAB_ROOT}
           PATHS ENV LD_LIBRARY_PATH
