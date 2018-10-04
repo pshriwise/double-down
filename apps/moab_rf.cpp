@@ -22,6 +22,8 @@ int main(int argc, char** argv) {
 
   rval = mbi->load_file(filename.c_str());
   MB_CHK_SET_ERR(rval, "Failed to load the specified MOAB file.");
+
+  
   
   return 0;
 }
