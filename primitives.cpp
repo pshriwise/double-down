@@ -1,4 +1,6 @@
 
+#include "primitives.hpp"
+
 void DblTriBounds(void* tris_i, size_t item, RTCBounds& bounds_o) {
 
   const DblTri* tris = (const DblTri*) tris_i;

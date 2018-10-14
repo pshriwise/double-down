@@ -69,8 +69,17 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
       /// rtcSetOccludedFunction(scene, tri_geom, (RTCOccludedFunc)&DblTriOccludedFunc); \\\
       
     } // surface loop
+
+    /// rtcCommitScene(this_scene); \\\
+    
   } // volume loop
   
 }
 
+void RayTracingInterface::shutdown() {
+  for(auto i : scenes) {
+    /// rtcDeleteScene(scene);
+  }
 
+  delete *MBI;
+}

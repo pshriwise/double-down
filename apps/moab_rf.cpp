@@ -17,11 +17,7 @@ int main(int argc, char** argv) {
 
   po.parseCommandLine(argc, argv);
   
-  // create a new MOAB instance
-  moab::Interface* mbi = new moab::Core();
-
-  moab::ErrorCode rval;
-
+  RayTracingInterface* RTI = new RayTracingInterface();
   // setup Embree instance
   
   
