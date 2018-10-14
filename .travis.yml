@@ -1,0 +1,25 @@
+sudo: required
+dist: xenial
+addons:
+  apt:
+    packages:
+      - gfortran
+      - mpich
+      - libmpich-dev
+      - libhdf5-serial-dev
+      - libhdf5-mpich-dev
+      - libblas-dev
+      - liblapack-dev
+env:
+  global:
+    - HDF5_ROOT=/usr
+    - DDBUILD=$HOME/opt/dd/build
+    - DDINSTALL=$HOME/opt/DD
+    - DDHOME=$HOME/dd
+    - LD_LIBRARY_PATH=$HOME/MOAB/lib:$HOME/DAGMC/lib
+    - DISPLAY=:99.0
+install:
+  - ./tools/ci/moab-install.sh
+before_script:
+  - ./ci/moab-install.sh
+
