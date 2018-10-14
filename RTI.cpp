@@ -83,10 +83,10 @@ void RayTracingInterface::shutdown() {
     /// rtcDeleteScene(scene); \\\
   ///  } \\\
 
-  for(auto t: tri_buffers) { free(t); }
+  for(int i = 0; i < tri_buffers.size(); i++) {
+    free(tri_buffers[i]);
+  }
   
-  delete MBI;
-
   /// rtcExit(); \\\
 
 }
