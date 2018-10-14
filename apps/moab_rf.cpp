@@ -18,9 +18,13 @@ int main(int argc, char** argv) {
   po.parseCommandLine(argc, argv);
   
   RayTracingInterface* RTI = new RayTracingInterface();
+
+  moab::ErrorCode rval;
+  rval = RTI->init(filename);
+  MB_CHK_SET_ERR(rval, "Failed to initialize the RayTracingInterface.");
+  
   // setup Embree instance
-  
-  
+
   return 0;
 }
 

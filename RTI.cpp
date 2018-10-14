@@ -10,17 +10,18 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
   
   moab::ErrorCode rval;
 
-  rval = mbi->load_file(filename.c_str());
+  rval = MBI->load_file(filename.c_str());
   MB_CHK_SET_ERR(rval, "Failed to load the specified MOAB file");
 
   // retrieve surfaces
   moab::Tag geom_tag;
-  rval = MBI->tag_get_handle(moab::GEOMETRY_DIMENSION_TAG_NAME);
+  rval = MBI->tag_get_handle("GEOM_DIMENSION", geom_tag);
   MB_CHK_SET_ERR(rval, "Failed to get the geometry dimension tag");
 
   moab::Range vols;
   int val = 3;
-  rval = MBI->get_entities_by_type_and_tag(0, moab::MBENTITYSET, &geom_tag, &val, vols);
+  const void *dum = &val;
+  rval = MBI->get_entities_by_type_and_tag(0, moab::MBENTITYSET, &geom_tag, &dum, 1, vols);
   MB_CHK_SET_ERR(rval, "Failed to get all surface sets in the model");
 
   // set the EH offset
@@ -40,7 +41,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
     rval = MBI->get_child_meshsets(vol, surfs);
     MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces.");
 
-    for (moab::Range::iterator j surfs.begin();
+    for (moab::Range::iterator j = surfs.begin();
          j != surfs.end(); j++) {
 
       moab::EntityHandle this_surf = *j;
@@ -55,31 +56,37 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
       // create a new geometry for the volume's scene
       /// unsigned int emsurf = rtcNewUserGeometry(scene, num_tris); \\\
 
-      DblTri* tris = (DblTri*) malloc(num_tris*sizeof(DblTri));
-
+      DblTri* emtris = (DblTri*) malloc(num_tris*sizeof(DblTri));
+      tri_buffers.push_back(emtris);
       for (int k = 0; k < num_tris; k++) {
-        tris[k].moab_instance = MBI;
-        tris[k].handle = tris[k];
-        tris[k].geomID = emsurf;
+        emtris[k].moab_instance = MBI;
+        emtris[k].handle = tris[k];
+        /// tris[k].geomID = emsurf; \\\
       }
+
+      
+    } // end tris loop
 
       /// rtcSetIntersectionFilterFunction(scene, tri_geom, (RTCFilterFunc)&intersectionFilter); \\\
       /// rtcSetBoundsFunction(scene, tri_geom, (RTCBoundsFunc)&DblTriBounds);   \\\
       /// rtcSetIntersectFunction(scene, tri_geom, (RTCIntersectFunc)&DblTriIntersectFunc); \\\
       /// rtcSetOccludedFunction(scene, tri_geom, (RTCOccludedFunc)&DblTriOccludedFunc); \\\
-      
-    } // surface loop
+    
+    } // end surface loop
 
     /// rtcCommitScene(this_scene); \\\
-    
-  } // volume loop
-  
+
+  } // end volume loop
 }
-
 void RayTracingInterface::shutdown() {
-  for(auto i : scenes) {
-    /// rtcDeleteScene(scene);
-  }
+  ///  for(auto s : scenes) { \\\
+    /// rtcDeleteScene(scene); \\\
+  ///  } \\\
 
-  delete *MBI;
+  for(auto t: tri_buffers) { free(t); }
+  
+  delete MBI;
+
+  /// rtcExit(); \\\
+
 }

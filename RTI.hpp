@@ -12,9 +12,12 @@ class RayTracingInterface{
 
   private:
   /// RTCScene g_scene; \\\
-  std::map<moab::EntityHandle,RTCScene> dag_vol_map;
+
+  // std::map<moab::EntityHandle,RTCScene> dag_vol_map;
+  std::vector<DblTri*> tri_buffers;
   std::map<moab::EntityHandle,int> global_vertex_map;
   /// std::vector<RTCScene> scenes; \\\
+
   moab::EntityHandle sceneOffset;
   moab::Interface* MBI;
   
@@ -24,7 +27,7 @@ class RayTracingInterface{
   //  std::vector<Vertex> vertices;
   enum rf_type { RF, PIV };
   void set_offset(moab::Range &vols);
-  void init();
+  moab::ErrorCode init(std::string filename);
   void create_scene(moab::EntityHandle vol);
   void commit_scene(moab::EntityHandle vol);
   void finalise_scene();
