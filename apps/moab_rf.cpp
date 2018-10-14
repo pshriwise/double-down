@@ -1,7 +1,9 @@
 
 
-#include "moab/Core.hpp"
+
 #include "moab/ProgOptions.hpp"
+#include "RTI.hpp"
+
 
 #include <string>
 #include <iostream>
@@ -20,10 +22,10 @@ int main(int argc, char** argv) {
 
   moab::ErrorCode rval;
 
-  rval = mbi->load_file(filename.c_str());
-  MB_CHK_SET_ERR(rval, "Failed to load the specified MOAB file.");
-
+  // setup Embree instance
   
   
   return 0;
 }
+
+

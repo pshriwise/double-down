@@ -1,18 +1,27 @@
+#pragma once
+
+// #include "embree/rtcore.hpp"
+// #include "embree/rtcore_ray.h"
+
+#include "moab/Core.hpp"
+
+#include "primitives.hpp"
 
 
 class RayTracingInterface{
 
   private:
-  RTCScene g_scene;
+  /// RTCScene g_scene; \\\
   std::map<moab::EntityHandle,RTCScene> dag_vol_map;
   std::map<moab::EntityHandle,int> global_vertex_map;
-  std::vector<RTCScene> scenes;
+  /// std::vector<RTCScene> scenes; \\\
   moab::EntityHandle sceneOffset;
+  moab::Interface* MBI;
   
   public:
   void *vertex_buffer_ptr;
   int vertex_buffer_size;
-  std::vector<Vertex> vertices;
+  //  std::vector<Vertex> vertices;
   enum rf_type { RF, PIV };
   void set_offset(moab::Range &vols);
   void init();
@@ -40,3 +49,5 @@ class RayTracingInterface{
 
 
 };
+
+
