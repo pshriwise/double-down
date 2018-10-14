@@ -23,6 +23,9 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
   rval = MBI->get_entities_by_type_and_tag(0, moab::MBENTITYSET, &geom_tag, &val, vols);
   MB_CHK_SET_ERR(rval, "Failed to get all surface sets in the model");
 
+  // set the EH offset
+  sceneOffset = *vols.begin();
+  
   // create an Embree geometry instance for each surface
   for (moab::Range::iterator i = vols.begin();
        i != vols.end(); i++) {
