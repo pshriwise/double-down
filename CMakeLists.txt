@@ -8,3 +8,6 @@ find_package(MOAB REQUIRED)
 set(DD_BINARY_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/bin")
 
 add_subdirectory(apps)
+add_subdirectory(test)
+
+enable_testing()
