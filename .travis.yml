@@ -19,7 +19,7 @@ env:
     - LD_LIBRARY_PATH=$HOME/MOAB/lib:$HOME/DAGMC/lib
     - DISPLAY=:99.0
 install:
-  - ./ci/moab-install.sh
+  - ./ci/travis-run.sh
 before_script:
   - ./ci/moab-install.sh
 
