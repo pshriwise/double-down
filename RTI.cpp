@@ -87,6 +87,9 @@ void RayTracingInterface::shutdown() {
     free(tri_buffers[i]);
   }
   
-  /// rtcExit(); \\\
+
+  if(MBI) { delete MBI; }
+  
+  /// rtcExit(); \\                             \
 
 }
