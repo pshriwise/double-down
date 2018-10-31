@@ -1,12 +1,8 @@
-
-
+#include <string>
+#include <iostream>
 
 #include "moab/ProgOptions.hpp"
 #include "RTI.hpp"
-
-
-#include <string>
-#include <iostream>
 
 int main(int argc, char** argv) {
 

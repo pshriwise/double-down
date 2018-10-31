@@ -1,7 +1,7 @@
 #pragma once
 
-// #include "embree/rtcore.hpp"
-// #include "embree/rtcore_ray.h"
+#include "embree2/rtcore.h"
+#include "embree2/rtcore_ray.h"
 
 #include "moab/Core.hpp"
 
@@ -11,16 +11,16 @@
 class RayTracingInterface{
 
   private:
-  /// RTCScene g_scene; \\\
+  RTCScene g_scene;
 
-  // std::map<moab::EntityHandle,RTCScene> dag_vol_map;
+  std::map<moab::EntityHandle,RTCScene> dag_vol_map;
   std::vector<DblTri*> tri_buffers;
   std::map<moab::EntityHandle,int> global_vertex_map;
-  /// std::vector<RTCScene> scenes; \\\
+  std::vector<RTCScene> scenes;
 
   moab::EntityHandle sceneOffset;
   moab::Interface* MBI;
-  
+
   public:
   void *vertex_buffer_ptr;
   int vertex_buffer_size;
@@ -31,7 +31,7 @@ class RayTracingInterface{
   void create_scene(moab::EntityHandle vol);
   void commit_scene(moab::EntityHandle vol);
   void finalise_scene();
-  void shutdown(); 
+  void shutdown();
   rf_type ray_fire_type;
   void create_vertex_map(moab::Interface* MBI);
   DblTri* add_Dtriangles(moab::Interface* MBI, moab::EntityHandle vol, moab::Range triangles_eh, int sense);
@@ -41,16 +41,14 @@ class RayTracingInterface{
   void get_all_intersections(float origin[3], float dir[3], std::vector<int> &surfaces,
 			     std::vector<float> &distances);
 
-  // void psuedo_ris( moab::EntityHandle vol, 
-  //       	   std::vector<double> &distances_out, 
-  //       	   std::vector<int> &surfs_out, 
-  //       	   std::vector<std::array<double,3> > &tri_norms_out, 
-  //       	   const double ray_origin[3], 
-  //       	   const double unit_ray_dir[3], 
-  //       	   double nonneg_ray_len, 
+  // void psuedo_ris( moab::EntityHandle vol,
+  //       	   std::vector<double> &distances_out,
+  //       	   std::vector<int> &surfs_out,
+  //       	   std::vector<std::array<double,3> > &tri_norms_out,
+  //       	   const double ray_origin[3],
+  //       	   const double unit_ray_dir[3],
+  //       	   double nonneg_ray_len,
   //       	   double neg_ray_len);
 
 
 };
-
-
