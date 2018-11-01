@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Vec3da.h"
-#include "sys.h"
+//#include "sys.h"
 
 #define EXIT_EARLY if(type) *type = NONE; return false;
 

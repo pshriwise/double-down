@@ -3,10 +3,19 @@
 #include <assert.h>
 #include <iostream>
 #include <math.h>
-#include "constants.h"
+//#include "constants.h"
 //#include "Vec3ba.h"
-#include "sys.h"
+//#include "sys.h"
 #include <immintrin.h>
+#include <xmmintrin.h>
+
+#ifndef NDEBUG
+#define __forceinline
+#else
+#define __forceinline inline __attribute__((always_inline))
+#endif
+
+static const float min_rcp_input = std::numeric_limits<float>::min();
 
 struct Vec3da {
   typedef double Scalar;
@@ -24,9 +33,9 @@ struct Vec3da {
 
   __forceinline Vec3da( const double px, const double py, const double pz, const int pa) { x = px; y = py; z = pz; a = pa; }
     
-  __forceinline Vec3da( ZeroTy ) { x = 0.0f; y = 0.0f; z = 0.0f; a = 0;}
-  __forceinline Vec3da( PosInfTy ) { x = inf; y = inf; z = inf; a = inf; };
-  __forceinline Vec3da( NegInfTy ) { x = neg_inf; y = neg_inf; z = neg_inf; a = neg_inf; };
+  /* __forceinline Vec3da( ZeroTy ) { x = 0.0f; y = 0.0f; z = 0.0f; a = 0;} */
+  /* __forceinline Vec3da( PosInfTy ) { x = inf; y = inf; z = inf; a = inf; }; */
+  /* __forceinline Vec3da( NegInfTy ) { x = neg_inf; y = neg_inf; z = neg_inf; a = neg_inf; }; */
 
   __forceinline const double& operator[](const size_t index) const { assert(index < 3); return (&x)[index]; }
   __forceinline       double& operator[](const size_t index)       { assert(index < 3); return (&x)[index]; }
