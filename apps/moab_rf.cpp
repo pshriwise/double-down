@@ -28,6 +28,10 @@ int main(int argc, char** argv) {
   po.addRequiredArg<std::string>("filename", "MOAB surface mesh to fire rays on.", &filename);
 
   po.parseCommandLine(argc, argv);
+
+#ifdef __AVX2__
+  std::cout << "AVX2 Enabled" << std::endl;
+#endif
   
   RayTracingInterface* RTI = new RayTracingInterface();
 
@@ -42,6 +46,8 @@ int main(int argc, char** argv) {
   int num_rays = 1000000;
   double total= 0.0;
   std::clock_t mark;
+  std::cout << "Firing " << num_rays
+            << " randomly oriented rays from the origin..." << std::endl;
   for (int i = 0; i < num_rays; i++) {
     // setup ray
     RTCDRay ray;
@@ -64,7 +70,10 @@ int main(int argc, char** argv) {
     total += std::clock() - mark;
 
     // make sure we hit something
-    assert(ray.geomID != -1);
+    if (ray.geomID == -1) {
+      std::cout << "Miss!" << std::endl;
+      exit(1);
+    }
 
   }
 
