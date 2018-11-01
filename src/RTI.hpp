@@ -19,9 +19,10 @@ class RayTracingInterface{
   std::vector<RTCScene> scenes;
 
   moab::EntityHandle sceneOffset;
-  moab::Interface* MBI;
+
 
   public:
+  moab::Interface* MBI;
   void *vertex_buffer_ptr;
   int vertex_buffer_size;
   //  std::vector<Vertex> vertices;
@@ -40,6 +41,10 @@ class RayTracingInterface{
   bool point_in_vol(float coordinate[3], float dir[3]);
   void get_all_intersections(float origin[3], float dir[3], std::vector<int> &surfaces,
 			     std::vector<float> &distances);
+
+
+  moab::ErrorCode get_vols(moab::Range& vols);
+  void fire(moab::EntityHandle vol, RTCDRay &ray);
 
   // void psuedo_ris( moab::EntityHandle vol,
   //       	   std::vector<double> &distances_out,

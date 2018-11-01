@@ -3,6 +3,7 @@
 
 #include "moab/ProgOptions.hpp"
 #include "RTI.hpp"
+#include "ray.h"
 
 int main(int argc, char** argv) {
 
@@ -19,8 +20,24 @@ int main(int argc, char** argv) {
   rval = RTI->init(filename);
   MB_CHK_SET_ERR(rval, "Failed to initialize the RayTracingInterface.");
   
-  // setup Embree instance
+  RTCDRay ray;
 
+  double org[3] = {0.0, 0.0, 0.0};
+  ray.set_org(org);
+  double dir[3] = {0.5, 0.5, 0.5};
+  ray.set_dir(dir);
+  double len = 1e17;
+  ray.set_len(len);
+  
+  moab::Range vols;
+  rval = RTI->get_vols(vols);
+  MB_CHK_SET_ERR(rval, "Failed to get volumes from the RTI.");
+
+  RTI->fire(vols.front(), ray);
+
+  std::cout << "Ray Distance: " << ray.dtfar << std::endl;
+  
+  delete RTI;
   return 0;
 }
 

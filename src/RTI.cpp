@@ -16,17 +16,10 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
   rval = MBI->load_file(filename.c_str());
   MB_CHK_SET_ERR(rval, "Failed to load the specified MOAB file");
 
-  // retrieve surfaces
-  moab::Tag geom_tag;
-  rval = MBI->tag_get_handle("GEOM_DIMENSION", geom_tag);
-  MB_CHK_SET_ERR(rval, "Failed to get the geometry dimension tag");
-
   moab::Range vols;
-  int val = 3;
-  const void *dum = &val;
-  rval = MBI->get_entities_by_type_and_tag(0, moab::MBENTITYSET, &geom_tag, &dum, 1, vols);
-  MB_CHK_SET_ERR(rval, "Failed to get all surface sets in the model");
-
+  rval = get_vols(vols);
+  MB_CHK_SET_ERR(rval, "Failed to get MOAB volumes.");
+  
   // set the EH offset
   sceneOffset = *vols.begin();
   
@@ -89,4 +82,26 @@ void RayTracingInterface::shutdown() {
   if(MBI) { delete MBI; }
   
   rtcExit();
+}
+
+void RayTracingInterface::fire(moab::EntityHandle vol, RTCDRay &ray) {
+
+  rtcIntersect(scenes[vol-sceneOffset], *((RTCRay*)&ray));
+  
+}
+
+moab::ErrorCode RayTracingInterface::get_vols(moab::Range& vols) {
+  moab::ErrorCode rval;
+  
+  // retrieve vols
+  moab::Tag geom_tag;
+  rval = MBI->tag_get_handle("GEOM_DIMENSION", geom_tag);
+  MB_CHK_SET_ERR(rval, "Failed to get the geometry dimension tag");
+
+  int val = 3;
+  const void *dum = &val;
+  rval = MBI->get_entities_by_type_and_tag(0, moab::MBENTITYSET, &geom_tag, &dum, 1, vols);
+  MB_CHK_SET_ERR(rval, "Failed to get all surface sets in the model");
+
+  return moab::MB_SUCCESS;
 }
