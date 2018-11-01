@@ -21,6 +21,7 @@ env:
     - DISPLAY=:99.0
 install:
   - ./ci/moab-install.sh
+  - ./ci/embree-install.sh
 script:
   - ./ci/travis-run.sh
 
