@@ -20,10 +20,17 @@ static const float min_rcp_input = std::numeric_limits<float>::min();
 struct Vec3da {
   typedef double Scalar;
   enum { n = 3 };
-  union{ __m256 v; struct{ double x,y,z;  size_t a;}; };
+  union{
+#ifdef __AVX2__
+    __m256 v;
+#endif
+    struct{ double x,y,z;  size_t a;};
+  };
 
   __forceinline Vec3da () {}
-
+#ifdef __AVX2__
+  __forceinline Vec3da ( const __m256 v_ ) : v(v_) { }
+#endif
   __forceinline Vec3da            ( const Vec3da& other ) { x = other.x; y = other.y; z = other.z; a = other.a; }
   __forceinline Vec3da& operator =( const Vec3da& other ) { x = other.x; y = other.y; z = other.z; a = other.a; return *this;}
 
@@ -73,15 +80,15 @@ __forceinline bool operator ==( const Vec3da& b, const Vec3da& c) { return b.x =
 							            b.y == c.y &&
 							            b.z == c.z;
                                                            }
-/* #if defined(__AVX2__) */
+#if defined(__AVX2__)
+__forceinline const Vec3da min( const Vec3da& a, const Vec3da& b ) { return _mm256_min_ps(a.v, b.v); }
+__forceinline const Vec3da max( const Vec3da& a, const Vec3da& b ) { return _mm256_max_ps(a.v, b.v); }
+#else
 __forceinline const Vec3da min( const Vec3da& b, const Vec3da& c ) { return Vec3da(std::min(b.x,c.x),std::min(b.y,c.y),
 									   std::min(b.z,c.z),std::min(b.a,c.a)); }
 __forceinline const Vec3da max( const Vec3da& b, const Vec3da& c ) { return Vec3da(std::max(b.x,c.x),std::max(b.y,c.y),
 									   std::max(b.z,c.z),std::max(b.a,c.a)); }
-/* #else */
-/* __forceinline const Vec3da min( const Vec3da& b, const Vec3da& c ) { return _mm_min_ps(a.v, b.v); } */
-/* __forceinline const Vec3da max( const Vec3da& b, const Vec3da& c ) { return _mm_max_ps(a.v, b.v); } */
-/* #endif */
+#endif
 
 /* __forceinline const Vec3ba ge_mask( const Vec3da& b, const Vec3da& c ) { return Vec3ba(b.x >= c.x,b.y >= c.y,b.z >= c.z,b.a >= c.a); } */
 /* __forceinline const Vec3ba le_mask( const Vec3da& b, const Vec3da& c ) { return Vec3ba(b.x <= c.x,b.y <= c.y,b.z <= c.z,b.a <= c.a); } */
