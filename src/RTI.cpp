@@ -73,6 +73,8 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
     rtcCommit(scene);
 
   } // end volume loop
+
+  return moab::MB_SUCCESS;
 }
 void RayTracingInterface::shutdown() {
   for(auto s : scenes) { rtcDeleteScene(s); }
