@@ -20,7 +20,8 @@ INCLUDE_DIRECTORIES( ${EMBREE_INCLUDE_DIRS} )
 
 set( DD_BINARY_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/bin" )
 
+enable_testing()
+
 add_subdirectory(apps)
 add_subdirectory(test)
 
-enable_testing()
