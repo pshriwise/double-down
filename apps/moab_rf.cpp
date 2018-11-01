@@ -51,21 +51,26 @@ int main(int argc, char** argv) {
     RNDVEC(dir);
     dir.normalize(); // unit len distance always
     ray.set_dir(dir.array());
-    double len = 1e17;
+    double len = 1000;
     ray.set_len(len);
-
-    // make sure we hit something
-    assert(ray.geomID != -1);
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.primID = RTC_INVALID_GEOMETRY_ID;
+    ray.mask = -1;
+    ray.rf_type = RayFireType::RF;
     
     // fire ray
     mark = std::clock();
     RTI->fire(vols.front(), ray);
     total += std::clock() - mark;
+
+    // make sure we hit something
+    assert(ray.geomID != -1);
+
   }
 
   double total_sec = total / (double)CLOCKS_PER_SEC;
   double per_ray = total_sec / (double)num_rays;
-  
+
   std::cout << "Total time in Ray Fire: " << total_sec << " sec" << std::endl;
   std::cout << "Total time per Ray Fire: " << per_ray << " sec" << std::endl;
 
