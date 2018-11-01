@@ -60,6 +60,9 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
       unsigned int emsurf = rtcNewUserGeometry(scene, num_tris);
 
       DblTri* emtris = (DblTri*) malloc(num_tris*sizeof(DblTri));
+
+      rtcSetUserData(scene, emsurf, emtris);
+      
       tri_buffers.push_back(emtris);
       for (int k = 0; k < num_tris; k++) {
         emtris[k].moab_instance = MBI;
