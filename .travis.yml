@@ -10,6 +10,7 @@ addons:
       - libhdf5-mpich-dev
       - libblas-dev
       - liblapack-dev
+      - libtbb-dev
 env:
   global:
     - HDF5_ROOT=/usr
