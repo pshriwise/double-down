@@ -68,28 +68,22 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
       } // end tris loop
 
       rtcSetIntersectionFilterFunction(scene, emsurf, (RTCFilterFunc)&DblTriIntersectFunc);
-      /// rtcSetBoundsFunction(scene, tri_geom, (RTCBoundsFunc)&DblTriBounds);   \\\
-      /// rtcSetIntersectFunction(scene, tri_geom, (RTCIntersectFunc)&DblTriIntersectFunc); \\\
-      /// rtcSetOccludedFunction(scene, tri_geom, (RTCOccludedFunc)&DblTriOccludedFunc); \\\
+      rtcSetBoundsFunction(scene, emsurf, (RTCBoundsFunc)&DblTriBounds);
+      rtcSetIntersectFunction(scene, emsurf, (RTCIntersectFunc)&DblTriIntersectFunc);
+      rtcSetOccludedFunction(scene, emsurf, (RTCOccludedFunc)&DblTriOccludedFunc);
     
     } // end surface loop
 
-    /// rtcCommitScene(this_scene); \\\
+    rtcCommit(scene);
 
   } // end volume loop
 }
 void RayTracingInterface::shutdown() {
-  ///  for(auto s : scenes) { \\\
-    /// rtcDeleteScene(scene); \\\
-  ///  } \\\
+  for(auto s : scenes) { rtcDeleteScene(s); }
 
-  for(int i = 0; i < tri_buffers.size(); i++) {
-    free(tri_buffers[i]);
-  }
-  
+  for(auto b : tri_buffers) { free(b); }
 
   if(MBI) { delete MBI; }
   
-  /// rtcExit(); \\                             \
-
+  rtcExit();
 }
