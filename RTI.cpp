@@ -1,10 +1,13 @@
 
-#include "RTI.hpp"
+// MOAB
 #include "MBTagConventions.hpp"
+
+// Local
+#include "RTI.hpp"
 
 moab::ErrorCode RayTracingInterface::init(std::string filename) {
 
-  // rtcInit();
+  rtcInit();
 
   MBI = new moab::Core();
   
@@ -33,8 +36,8 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
     moab::EntityHandle vol = *i;
     
     // add to scenes vec
-    /// rtcScene this_scene = rtcNewScene(RTC_SCENE_ROBUST,RTC_INTERSECT1)); \\\
-    /// scenes.push_back(this_scene); \\\
+    RTCScene scene = rtcNewScene(RTC_SCENE_ROBUST , RTC_INTERSECT1);
+    scenes.push_back(scene);
     
     // get volume surfaces
     moab::Range surfs;
@@ -54,20 +57,17 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
       int num_tris = tris.size();
 
       // create a new geometry for the volume's scene
-      /// unsigned int emsurf = rtcNewUserGeometry(scene, num_tris); \\\
+      unsigned int emsurf = rtcNewUserGeometry(scene, num_tris);
 
       DblTri* emtris = (DblTri*) malloc(num_tris*sizeof(DblTri));
       tri_buffers.push_back(emtris);
       for (int k = 0; k < num_tris; k++) {
         emtris[k].moab_instance = MBI;
         emtris[k].handle = tris[k];
-        /// tris[k].geomID = emsurf; \\\
-      }
+        emtris[k].geomID = emsurf;
+      } // end tris loop
 
-      
-    } // end tris loop
-
-      /// rtcSetIntersectionFilterFunction(scene, tri_geom, (RTCFilterFunc)&intersectionFilter); \\\
+      rtcSetIntersectionFilterFunction(scene, emsurf, (RTCFilterFunc)&DblTriIntersectFunc);
       /// rtcSetBoundsFunction(scene, tri_geom, (RTCBoundsFunc)&DblTriBounds);   \\\
       /// rtcSetIntersectFunction(scene, tri_geom, (RTCIntersectFunc)&DblTriIntersectFunc); \\\
       /// rtcSetOccludedFunction(scene, tri_geom, (RTCOccludedFunc)&DblTriOccludedFunc); \\\

@@ -6,7 +6,7 @@
 #include "moab/Core.hpp"
 
 #include "primitives.hpp"
-
+#include "ray.h"
 
 class RayTracingInterface{
 

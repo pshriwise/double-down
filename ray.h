@@ -1,3 +1,6 @@
+#pragma once
+
+#include "embree2/rtcore_ray.h"
 
 // This might go away with the alorithm update
 enum rf_type { RF, PIV};

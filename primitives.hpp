@@ -1,7 +1,20 @@
 
+#include "embree2/rtcore.h"
+#include "moab/Core.hpp"
+#include "moab/CartVect.hpp"
+
+#include "ray.h"
+
 struct DblTri {
   void* moab_instance;
   moab::EntityHandle handle;
   unsigned int geomID;
   int sense;
 };
+
+
+void DblTriBounds(void* tris_i, size_t item, RTCBounds& bounds_o);
+
+void DblTriIntersectFunc(void* tris_i, RTCDRay& ray, size_t item);
+
+void DblTriOccludedFunc(void* tris_i, RTCDRay& ray, size_t item);
