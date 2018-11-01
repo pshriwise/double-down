@@ -18,5 +18,4 @@ cmake ../embree -DCMAKE_INSTALL_PREFIX=$EMBREE_INSTALL_DIR \
       -DEMBREE_TBB_ROOT=/usr
 make -j2 && make -j2 install
 rm -rf $HOME/EMBREE/embree
-export LD_LIBRARY_PATH=$EMBREE_INSTALL_DIR/lib:$LD_LIBRARY_PATH
-echo $LD_LIBRARY_PATH
+

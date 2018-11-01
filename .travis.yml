@@ -18,7 +18,7 @@ env:
     - DDBUILD=$HOME/opt/dd/build
     - DDINSTALL=$HOME/opt/DD
     - DDHOME=$HOME/dd
-    - LD_LIBRARY_PATH=$HOME/MOAB/lib:$HOME/DAGMC/lib
+    - LD_LIBRARY_PATH=$HOME/EMBREE/lib:$HOME/MOAB/lib:$HOME/DAGMC/lib
     - DISPLAY=:99.0
 install:
   - ./ci/moab-install.sh
