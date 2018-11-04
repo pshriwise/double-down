@@ -9,9 +9,8 @@ struct DblTri {
   void* moab_instance;
   moab::EntityHandle handle;
   unsigned int geomID;
-  int sense;
+  uint8_t sense;
 };
-
 
 void DblTriBounds(void* tris_i, size_t item, RTCBounds& bounds_o);
 

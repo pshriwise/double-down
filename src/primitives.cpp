@@ -17,7 +17,10 @@ void DblTriBounds(void* tris_i, size_t item, RTCBounds& bounds_o) {
   rval = mbi->get_connectivity(&(this_tri.handle), 1, conn);
   MB_CHK_SET_ERR_CONT(rval, "Failed to get triangle connectivity");
 
-  assert(conn.size() == 3);
+  if (conn.size() != 3) {
+    throw std::length_error("Incorrect number of coordinates returned for a triangle entity.");
+  }
+  
   moab::CartVect coords[3];
   rval = mbi->get_coords(&conn[0], 1, coords[0].array());
   MB_CHK_SET_ERR_CONT(rval, "Failed to get vertext coordinates");
@@ -82,12 +85,10 @@ void DblTriIntersectFunc(void* tris_i, RTCDRay& ray, size_t item) {
     Vec3da normal = cross((coords[1] - coords[0]),(coords[2] - coords[0]));
 
     if( -1 == this_tri.sense ) normal *= -1;
-    
-    ray.Ng[0] = normal[0];
-    ray.Ng[1] = normal[1];
-    ray.Ng[2] = normal[2];
 
-
+    ray.dNg[0] = normal[0];
+    ray.dNg[1] = normal[1];
+    ray.dNg[2] = normal[2];
   }
 
   return;

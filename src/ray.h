@@ -1,6 +1,7 @@
 #pragma once
 
 #include "embree2/rtcore_ray.h"
+#include "Vec3da.h"
 
 // This might go away with the alorithm update
 enum RayFireType { RF, PIV };
@@ -26,5 +27,10 @@ struct RTCDRay: RTCRay2 {
     dtfar = len;
   }
 
-  double dorg[3], ddir[3], dtfar;
+  double dot_prod( RTCRay &ray ) {
+    return dot(ddir, dNg);
+  }
+  
+  Vec3da dorg, ddir, dNg;
+  double dtfar;
 };
