@@ -27,7 +27,7 @@ struct RTCDRay: RTCRay2 {
     dtfar = len;
   }
 
-  double dot_prod( RTCRay &ray ) {
+  double dot_prod() {
     return dot(ddir, dNg);
   }
   

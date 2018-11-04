@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
-    ray.rf_type = 0;
+    ray.rf_type = RayFireType::RF;
     
     // fire ray
     mark = std::clock();

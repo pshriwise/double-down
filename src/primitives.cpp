@@ -5,6 +5,22 @@
 
 #include <cassert>
 
+void intersectionFilter(void* ptr, RTCDRay &ray) 
+{
+
+  switch(ray.rf_type) 
+    {
+    case 0: //if this is a typical ray_fire, check the dot_product
+      if ( 0 > ray.dot_prod() )
+	ray.geomID = RTC_INVALID_GEOMETRY_ID;
+      break;
+    case 1: //if this is a point_in_vol fire, do nothing
+      break;
+    }
+
+}
+
+
 void DblTriBounds(void* tris_i, size_t item, RTCBounds& bounds_o) {
 
   const DblTri* tris = (const DblTri*) tris_i;
