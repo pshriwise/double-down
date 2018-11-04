@@ -5,7 +5,6 @@
 
 #include "moab/ProgOptions.hpp"
 #include "RTI.hpp"
-#include "ray.h"
 
 static const double PI = acos(-1.0);
 static const double denom = 1.0 / ((double) RAND_MAX);

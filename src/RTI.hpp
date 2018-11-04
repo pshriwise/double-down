@@ -1,4 +1,6 @@
-#pragma once
+
+#ifndef DD_RTI_H
+#define DD_RTI_H
 
 #include "embree2/rtcore.h"
 #include "embree2/rtcore_ray.h"
@@ -6,7 +8,6 @@
 #include "moab/Core.hpp"
 
 #include "primitives.hpp"
-#include "ray.h"
 
 class RayTracingInterface{
 
@@ -38,3 +39,5 @@ class RayTracingInterface{
   moab::EntityHandle sceneOffset;
   
 };
+
+#endif

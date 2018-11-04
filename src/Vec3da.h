@@ -1,16 +1,15 @@
-#pragma once
+
+#ifndef DD_VEC3DA_H
+#define DD_VEC3DA_H
 
 #include <assert.h>
 #include <iostream>
 #include <math.h>
-//#include "constants.h"
-//#include "Vec3ba.h"
-//#include "sys.h"
 #include <immintrin.h>
 #include <xmmintrin.h>
 
 #ifndef NDEBUG
-#define __forceinline
+#define __forceinline inline
 #else
 #define __forceinline inline __attribute__((always_inline))
 #endif
@@ -132,4 +131,4 @@ __forceinline std::ostream& operator <<(std::ostream &os, Vec3da  const& v) {
   return os << '[' << v[0] << ' ' << v[1] << ' ' << v[2] << ' ' << v.a << ']';
 }
 
-
+#endif

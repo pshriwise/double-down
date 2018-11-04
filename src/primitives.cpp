@@ -1,9 +1,5 @@
 
 #include "primitives.hpp"
-#include "moab/GeomUtil.hpp"
-#include "TriangleIntersectors.h"
-
-#include <cassert>
 
 void intersectionFilter(void* ptr, RTCDRay &ray) 
 {

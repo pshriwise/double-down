@@ -1,7 +1,8 @@
-#pragma once
+
+#ifndef DD_TRI_INTERSECT_H
+#define DD_TRI_INTERSECT_H
 
 #include "Vec3da.h"
-//#include "sys.h"
 
 #define EXIT_EARLY if(type) *type = NONE; return false;
 
@@ -163,3 +164,5 @@ inline bool plucker_ray_tri_intersect( const Vec3da vertices[3],
 
   return true;
 }
+
+#endif

@@ -1,4 +1,6 @@
-#pragma once
+
+#ifndef DD_RAY_H
+#define DD_RAY_H
 
 #include "embree2/rtcore_ray.h"
 #include "Vec3da.h"
@@ -6,9 +8,7 @@
 // This might go away with the alorithm update
 enum RayFireType { RF, PIV };
 
-struct RTCRay2 : RTCRay { int rf_type;
-
-};
+struct RTCRay2 : RTCRay { RayFireType rf_type; };
 
 // TO-DO: there should be a few more double elements here (barycentric coords)
 struct RTCDRay: RTCRay2 {
@@ -34,3 +34,5 @@ struct RTCDRay: RTCRay2 {
   Vec3da dorg, ddir, dNg;
   double dtfar;
 };
+
+#endif
