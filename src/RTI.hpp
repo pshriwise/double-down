@@ -26,6 +26,15 @@ class RayTracingInterface{
                 const double dir[3], RayFireType filt_func, double tnear,
                 int &em_surf, double &dist_to_hit, float norm[3]);
 
+  void dag_ray_fire(const moab::EntityHandle volume,
+                    const double point[3],
+                    const double dir[3],
+                    moab::EntityHandle& next_surf,
+                    double& next_surf_dist,
+                    void* history,
+                    double user_dist_limit,
+                    int ray_orientation);
+  
   bool point_in_vol(float coordinate[3], float dir[3]);
 
   moab::ErrorCode get_vols(moab::Range& vols);

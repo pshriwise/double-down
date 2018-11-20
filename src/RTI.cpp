@@ -92,6 +92,39 @@ void RayTracingInterface::fire(moab::EntityHandle vol, RTCDRay &ray) {
   
 }
 
+void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
+                                       const double point[3],
+                                       const double dir[3],
+                                       moab::EntityHandle& next_surf,
+                                       double& next_surf_dist,
+                                       void* history,
+                                       double user_dist_limit,
+                                       int ray_orientation) {
+  const double huge_val = std::numeric_limits<double>::max();
+  double dist_limit = huge_val;
+  if (user_dist_limit > 0) { dist_limit = user_dist_limit; }
+
+  // don't recreate these every call
+  std::vector<double>       dists;
+  std::vector<moab::EntityHandle> surfs;
+  std::vector<moab::EntityHandle> facets;
+
+  // setup the ray
+  RTCDRay ray;
+  ray.set_org(point);
+  ray.set_dir(dir);
+  ray.set_len(dist_limit);
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
+  ray.mask = -1;
+  ray.rf_type = RayFireType::RF;
+
+  // fire ray
+  RTCScene scene = scenes[volume - sceneOffset];
+  rtcIntersect(scene, *((RTCRay*)&ray));
+  
+}
+
 moab::ErrorCode RayTracingInterface::get_vols(moab::Range& vols) {
   moab::ErrorCode rval;
   
