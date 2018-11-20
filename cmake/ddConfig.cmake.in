@@ -1,2 +1,2 @@
 
-include( ddTargets.cmake ) 
+include( @DD_CMAKE_CONFIG_LOCATION@/ddTargets.cmake ) 
