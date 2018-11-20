@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 # Default to a release build
 set(default_build_type "Release")
- 
+
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
   set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
@@ -32,6 +32,7 @@ FIND_PACKAGE ( embree 2.0 REQUIRED )
 # Set install locations
 set( DD_BINARY_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/bin" )
 set( DD_LIBRARY_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/lib" )
+set( DD_CMAKE_CONFIG_LOCATION "${DD_LIBRARY_INSTALL_LOCATION}/cmake")
 
 MESSAGE ( STATUS "Found Embree " ${EMBREE_VERSION} " at " ${EMBREE_PATH} )
 MESSAGE ( STATUS "EMBREE_LIBRARY is " ${EMBREE_LIBRARY} )
@@ -43,8 +44,12 @@ add_library( dd SHARED "src/RTI.cpp" )
 target_include_directories( dd PUBLIC "${CMAKE_PROJECT_SOURCE_DIR}/src/" )
 target_link_libraries( dd ${MOAB_LIBRARIES} ${EMBREE_LIBRARY} )
 install( TARGETS dd DESTINATION "${DD_LIBRARY_INSTALL_LOCATION}" )
+export( TARGETS dd APPEND FILE "${DD_CMAKE_CONFIG_LOCATION}/ddTargets.cmake" )
+
+# Tests
 enable_testing()
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/ddConfig.cmake.in" "${DD_CMAKE_CONFIG_LOCATION}/ddConfig.cmake")
 
 add_subdirectory(apps)
 add_subdirectory(test)
-
