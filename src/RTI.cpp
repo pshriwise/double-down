@@ -97,7 +97,7 @@ void RayTracingInterface::fire(moab::EntityHandle vol, RTCDRay &ray) {
 void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
                                        const double point[3],
                                        const double dir[3],
-                                       moab::EntityHandle& next_surf,
+                                       int& next_surf,
                                        double& next_surf_dist,
                                        void* history,
                                        double user_dist_limit,
