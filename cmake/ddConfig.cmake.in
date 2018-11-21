@@ -1,2 +1,4 @@
 
 include( @DD_CMAKE_CONFIG_LOCATION@/ddTargets.cmake ) 
+
+set(dd_FOUND TRUE)

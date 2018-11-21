@@ -6,15 +6,17 @@
 #include "RTI.hpp"
 
 moab::ErrorCode RayTracingInterface::init(std::string filename) {
-
-  rtcInit();
-
-  MBI = new moab::Core();
-  
   moab::ErrorCode rval;
-
-  rval = MBI->load_file(filename.c_str());
-  MB_CHK_SET_ERR(rval, "Failed to load the specified MOAB file");
+  
+  if ("" == filename && NULL == MBI) {
+    return moab::MB_FAILURE; 
+  } else if (!MBI) {
+    MBI = new moab::Core();
+    rval = MBI->load_file(filename.c_str());
+    MB_CHK_SET_ERR(rval, "Failed to load the specified MOAB file");
+  }
+    
+  rtcInit();
 
   moab::Range vols;
   rval = get_vols(vols);
@@ -122,6 +124,10 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
   // fire ray
   RTCScene scene = scenes[volume - sceneOffset];
   rtcIntersect(scene, *((RTCRay*)&ray));
+
+  next_surf_dist = ray.dtfar;
+  next_surf = ray.geomID;
+  
   
 }
 

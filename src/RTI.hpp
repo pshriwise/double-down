@@ -10,10 +10,14 @@
 #include "primitives.hpp"
 
 class RayTracingInterface{
-
+  
   public:
+  RayTracingInterface(moab::Interface* mbi) : MBI(mbi) { }
+
+  RayTracingInterface() : MBI(NULL) { }
+  
   // Public Functions
-  moab::ErrorCode init(std::string filename);
+  moab::ErrorCode init(std::string filename = "");
   void set_offset(moab::Range &vols);
   void create_scene(moab::EntityHandle vol);
   void commit_scene(moab::EntityHandle vol);
