@@ -120,29 +120,12 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
   
   if (history) { mbray.rh = history; }
     
-  // don't recreate these every call
-  std::vector<double>       dists;
-  std::vector<moab::EntityHandle> surfs;
-  std::vector<moab::EntityHandle> facets;
-
-  // setup the ray
-  RTCDRay ray;
-  ray.set_org(point);
-  ray.set_dir(dir);
-  ray.set_len(dist_limit);
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.rf_type = RayFireType::RF;
-
   // fire ray
   RTCScene scene = scenes[volume - sceneOffset];
-  rtcIntersect(scene, *((RTCRay*)&ray));
+  rtcIntersect(scene, *((RTCRay*)&mbray));
 
-  next_surf_dist = ray.dtfar;
-  next_surf = ray.geomID;
-  
-  
+  next_surf_dist = mbray.dtfar;
+  next_surf = mbray.geomID;
 }
 
 moab::ErrorCode RayTracingInterface::get_vols(moab::Range& vols) {
