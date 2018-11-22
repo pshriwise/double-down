@@ -31,7 +31,8 @@ struct MBRay : RTCDRay {
     primID = RTC_INVALID_GEOMETRY_ID;
   }
 
-  moab::GeomQueryTool::RayHistory rh;
+  moab::GeomQueryTool::RayHistory* rh;
+  
 };
 
 double dot_prod(RTCDRay ray);
