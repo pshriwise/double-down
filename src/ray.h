@@ -45,4 +45,31 @@ struct RTCDRay: RTCRay2 {
   double dtfar;
 };
 
+struct MBRayAccumulate : RTCDRay {
+  inline MBRayAccumulate() {
+    tnear = 0.0;
+    tfar  = 1.E37;
+    mask  = -1;
+    geomID = RTC_INVALID_GEOMETRY_ID;
+    primID = RTC_INVALID_GEOMETRY_ID;
+    sum = 0;
+    num_hit = 0;
+  }
+
+  int sum, num_hit;
+};
+
+struct MBRay : RTCDRay {
+  inline MBRay() {
+    tnear = 0.0;
+    tfar  = 1.E37;
+    mask  = -1;
+    geomID = RTC_INVALID_GEOMETRY_ID;
+    primID = RTC_INVALID_GEOMETRY_ID;
+    prev_facets = NULL;
+  }
+
+  std::vector<moab::EntityHandle>* prev_facets;
+};
+
 #endif

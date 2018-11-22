@@ -4,6 +4,7 @@
 
 // Local
 #include "RTI.hpp"
+#include "ray_funcs.h"
 
 moab::ErrorCode RayTracingInterface::init(std::string filename) {
   moab::ErrorCode rval;
