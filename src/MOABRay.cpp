@@ -11,7 +11,11 @@ double dot_prod(RTCDRay ray) {
 }
 
 bool in_facets(MBRay ray, moab::EntityHandle tri) {
-  return ray.rh->in_history(tri);
+  if (ray.rh) {
+    return ray.rh->in_history(tri);
+  } else {
+    return false;
+  }
 }
 
 void backface_cull(MBRay &ray, void*) {

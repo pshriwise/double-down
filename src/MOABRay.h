@@ -31,6 +31,7 @@ struct MBRay : RTCDRay {
     primID = RTC_INVALID_GEOMETRY_ID;
     surf_handle = 0;
     prim_handle = 0;
+    rh = NULL;
   }
 
   moab::EntityHandle surf_handle, prim_handle;
