@@ -6,6 +6,7 @@
 #include "embree2/rtcore_ray.h"
 
 #include "moab/Core.hpp"
+#include "moab/GeomQueryTool.hpp"
 
 #include "primitives.hpp"
 
@@ -35,7 +36,7 @@ class RayTracingInterface{
                     const double dir[3],
                     int& next_surf,
                     double& next_surf_dist,
-                    void* history,
+                    moab::GeomQueryTool::RayHistory* history,
                     double user_dist_limit,
                     int ray_orientation);
   

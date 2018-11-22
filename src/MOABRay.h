@@ -2,6 +2,10 @@
 #ifndef DD_RAY_FUNCS_H
 #define DD_RAY_FUNCS_H
 
+// MOAB
+#include "moab/GeomQueryTool.hpp"
+
+// local
 #include "ray.h"
 
 struct MBRayAccumulate : RTCDRay {
@@ -25,10 +29,9 @@ struct MBRay : RTCDRay {
     mask  = -1;
     geomID = RTC_INVALID_GEOMETRY_ID;
     primID = RTC_INVALID_GEOMETRY_ID;
-    prev_facets = NULL;
   }
 
-  std::vector<moab::EntityHandle>* prev_facets;
+  moab::GeomQueryTool::RayHistory rh;
 };
 
 double dot_prod(RTCDRay ray);

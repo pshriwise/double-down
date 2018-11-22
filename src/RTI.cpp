@@ -100,7 +100,7 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
                                        const double dir[3],
                                        int& next_surf,
                                        double& next_surf_dist,
-                                       void* history,
+                                       moab::GeomQueryTool::RayHistory* prev_facets,
                                        double user_dist_limit,
                                        int ray_orientation) {
   const double huge_val = std::numeric_limits<double>::max();

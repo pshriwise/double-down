@@ -10,12 +10,7 @@ double dot_prod(MBRay ray) {
 }
 
 bool in_facets(MBRay ray, moab::EntityHandle tri) {
-  if ( ray.prev_facets && std::find(ray.prev_facets->begin(), ray.prev_facets->end(), tri) != ray.prev_facets->end() ) {
-    return true;
-  }
-  else {
-    return false;
-  }
+  ray.rh.in_history(tri);
 }
 
 void backface_cull(MBRay &ray, void*) {
