@@ -7,6 +7,7 @@
 #include <math.h>
 #include <immintrin.h>
 #include <xmmintrin.h>
+#include <limits>
 
 #ifndef NDEBUG
 #define __forceinline inline

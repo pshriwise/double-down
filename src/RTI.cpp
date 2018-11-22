@@ -4,7 +4,6 @@
 
 // Local
 #include "RTI.hpp"
-#include "MOABRay.h"
 
 moab::ErrorCode RayTracingInterface::init(std::string filename) {
   moab::ErrorCode rval;
@@ -68,7 +67,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
 
       rtcSetIntersectionFilterFunction(scene, emsurf, (RTCFilterFunc)&DblTriIntersectFunc);
       rtcSetBoundsFunction(scene, emsurf, (RTCBoundsFunc)&DblTriBounds);
-      rtcSetIntersectFunction(scene, emsurf, (RTCIntersectFunc)&DblTriIntersectFunc);
+      rtcSetIntersectFunction(scene, emsurf, (RTCIntersectFunc)&MBDblTriIntersectFunc);
       rtcSetOccludedFunction(scene, emsurf, (RTCOccludedFunc)&DblTriOccludedFunc);
     
     } // end surface loop
@@ -100,13 +99,27 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
                                        const double dir[3],
                                        int& next_surf,
                                        double& next_surf_dist,
-                                       moab::GeomQueryTool::RayHistory* prev_facets,
+                                       moab::GeomQueryTool::RayHistory* history,
                                        double user_dist_limit,
                                        int ray_orientation) {
+
   const double huge_val = std::numeric_limits<double>::max();
   double dist_limit = huge_val;
   if (user_dist_limit > 0) { dist_limit = user_dist_limit; }
 
+  MBRay mbray;
+  mbray.set_org(point);
+  mbray.set_dir(dir);
+
+  mbray.tnear = 0.0;
+  mbray.set_len(dist_limit);
+  mbray.geomID = RTC_INVALID_GEOMETRY_ID;
+  mbray.primID = RTC_INVALID_GEOMETRY_ID;
+  mbray.rf_type = RayFireType::RF;
+  mbray.mask = -1;
+  
+  if (history) { mbray.rh = history; }
+    
   // don't recreate these every call
   std::vector<double>       dists;
   std::vector<moab::EntityHandle> surfs;

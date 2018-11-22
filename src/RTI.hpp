@@ -9,6 +9,7 @@
 #include "moab/GeomQueryTool.hpp"
 
 #include "primitives.hpp"
+#include "MOABRay.h"
 
 class RayTracingInterface{
   

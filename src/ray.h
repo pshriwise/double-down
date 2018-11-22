@@ -40,7 +40,7 @@ struct RTCDRay: RTCRay2 {
   double dot_prod() {
     return dot(ddir, dNg);
   }
-  
+
   Vec3da dorg, ddir, dNg;
   double dtfar;
 };

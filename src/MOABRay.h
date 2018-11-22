@@ -29,8 +29,12 @@ struct MBRay : RTCDRay {
     mask  = -1;
     geomID = RTC_INVALID_GEOMETRY_ID;
     primID = RTC_INVALID_GEOMETRY_ID;
+    surf_handle = 0;
+    prim_handle = 0;
   }
 
+  moab::EntityHandle surf_handle, prim_handle;
+  
   moab::GeomQueryTool::RayHistory* rh;
   
 };
@@ -44,5 +48,7 @@ void backface_cull(MBRay &ray, void*);
 void frontface_cull(MBRay &ray, void*);
 
 void count_hits(MBRayAccumulate &ray, void*);
+
+void MBDblTriIntersectFunc(void* tris_i, MBRay& ray, size_t item);
 
 #endif

@@ -57,7 +57,6 @@ void DblTriBounds(void* tris_i, size_t item, RTCBounds& bounds_o) {
   return;
 }
 
-
 void DblTriIntersectFunc(void* tris_i, RTCDRay& ray, size_t item) {
 
   const DblTri* tris = (const DblTri*) tris_i;
@@ -93,7 +92,7 @@ void DblTriIntersectFunc(void* tris_i, RTCDRay& ray, size_t item) {
     ray.v = 0.0f;
     ray.geomID = this_tri.geomID;
     ray.primID = (unsigned int) item;
-
+    
     Vec3da normal = cross((coords[1] - coords[0]),(coords[2] - coords[0]));
 
     if( -1 == this_tri.sense ) normal *= -1;
