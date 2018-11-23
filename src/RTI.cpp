@@ -107,6 +107,8 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
   double dist_limit = huge_val;
   if (user_dist_limit > 0) { dist_limit = user_dist_limit; }
 
+  RTCScene scene = scenes[volume - sceneOffset];
+  
   MBRay mbray;
   mbray.set_org(point);
   mbray.set_dir(dir);
@@ -121,11 +123,71 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
   if (history) { mbray.rh = history; }
     
   // fire ray
-  RTCScene scene = scenes[volume - sceneOffset];
   rtcIntersect(scene, *((RTCRay*)&mbray));
 
-  next_surf_dist = mbray.dtfar;
-  next_surf = mbray.geomID;
+  // check behind the ray origin for intersections
+  double neg_ray_len = 1e-03;
+
+  MBRay neg_ray;
+  neg_ray.set_org(point);
+  neg_ray.set_dir(-mbray.ddir);
+  neg_ray.tnear = 0.0;
+  neg_ray.instID = volume;
+  neg_ray.geomID = -1;
+  neg_ray.primID = -1;
+  if( history ) {
+    neg_ray.rh = history;
+  }
+  neg_ray.tfar = neg_ray_len;
+  
+  rtcIntersect(scene, *((RTCRay*)&neg_ray));
+
+  bool use_neg_intersection = false;
+  // If an RTI is found at negative distance, perform a PMT to see if the
+  // particle is inside an overlap.
+  if(neg_ray.geomID != RTC_INVALID_GEOMETRY_ID) {
+    moab::ErrorCode rval;
+    // get the next volume
+    std::vector<moab::EntityHandle> vols;
+    moab::EntityHandle nx_vol;
+    rval = MBI->get_parent_meshsets( neg_ray.surf_handle, vols );
+    MB_CHK_SET_ERR_CONT(rval, "Failed to get the parent meshsets");
+    if (2 != vols.size()) {
+      MB_CHK_SET_ERR_CONT(moab::MB_FAILURE, "Invaid number of parent volumes found");
+    }
+    if(vols.front() == volume) {
+      nx_vol = vols.back();
+    } else {
+      nx_vol = vols.front();
+    }
+    int result = 0;
+    //    rval = point_in_volume( nx_vol, point, result, dir, history );
+    //    MB_CHK_SET_ERR_CONT(rval, "Point in volume query failed");
+    if (1==result) use_neg_intersection = true;
+  }
+
+  if(use_neg_intersection) {
+    next_surf_dist = 0;
+    next_surf = neg_ray.geomID;
+  }
+  else if ( mbray.geomID != RTC_INVALID_GEOMETRY_ID) {
+    next_surf_dist = mbray.tfar;
+    next_surf = mbray.geomID;
+  }
+  else {
+    next_surf_dist = 1E37;
+    next_surf = 0;
+  }
+
+  if(history) {
+    if(use_neg_intersection) {
+      history->add_entity(neg_ray.prim_handle);
+    }
+    else { 
+      history->add_entity(mbray.prim_handle);
+    }
+  }
+  
 }
 
 moab::ErrorCode RayTracingInterface::get_vols(moab::Range& vols) {

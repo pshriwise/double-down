@@ -69,12 +69,18 @@ void MBDblTriIntersectFunc(void* tris_i, MBRay& ray, size_t item) {
 
   DblTriIntersectFunc(tris_i, ray, item);
 
-  // set surf and tri handel if hit was found
-  if(ray.geomID != RTC_INVALID_GEOMETRY_ID && ray.rh) {
-    const DblTri* tris = (const DblTri*) tris_i;
-    const DblTri& this_tri = tris[item];
-    ray.rh->add_entity(this_tri.handle);
+  const DblTri* tris = (const DblTri*) tris_i;
+  const DblTri& this_tri = tris[item];
+
+  // set surf and tri handle if hit was found
+  if(ray.geomID != RTC_INVALID_GEOMETRY_ID && ray.rh && !ray.rh->in_history(this_tri.handle)) {
+    ray.prim_handle = this_tri.handle;
+  } else {
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.primID = RTC_INVALID_GEOMETRY_ID;
   }
+
+
   
   return;
 }
