@@ -28,6 +28,13 @@ class RayTracingInterface{
   void create_vertex_map(moab::Interface* MBI);
 
   void add_triangles(moab::Interface* MBI, moab::EntityHandle vol, moab::Range triangles_eh, int sense);
+
+  void dag_point_in_volume(const moab::EntityHandle volume,
+                           const double xyz[3],
+                           int& result,
+                           const double *uvw,
+                           moab::GeomQueryTool::RayHistory *history);
+
   void ray_fire(moab::EntityHandle volume, const double origin[3],
                 const double dir[3], RayFireType filt_func, double tnear,
                 int &em_surf, double &dist_to_hit, float norm[3]);

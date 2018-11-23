@@ -94,6 +94,57 @@ void RayTracingInterface::fire(moab::EntityHandle vol, RTCDRay &ray) {
   
 }
 
+void RayTracingInterface::dag_point_in_volume(const moab::EntityHandle volume,
+                                              const double xyz[3],
+                                              int& result,
+                                              const double *uvw,
+                                              moab::GeomQueryTool::RayHistory *history) {
+  const double huge_val = std::numeric_limits<double>::max();
+  double dist_limit = huge_val;
+
+  RTCScene scene = scenes[volume - sceneOffset];
+
+  double dir[3];
+  if (uvw) {
+    dir[0] = uvw[0];
+    dir[1] = uvw[1];
+    dir[2] = uvw[2];
+  } else {
+    dir[0] = 0.5;
+    dir[1] = 0.5;
+    dir[2] = 0.5;
+  }
+    
+  MBRay mbray;
+  mbray.set_org(xyz);
+  mbray.set_dir(dir);
+
+  mbray.tnear = 0.0;
+  mbray.set_len(dist_limit);
+  mbray.geomID = RTC_INVALID_GEOMETRY_ID;
+  mbray.primID = RTC_INVALID_GEOMETRY_ID;
+  mbray.rf_type = RayFireType::PIV;
+  mbray.orientation = -1;
+  mbray.mask = -1;
+  if (history) { mbray.rh = history; }
+
+  // fire ray
+  rtcIntersect(scene, *((RTCRay*)&mbray));
+
+  Vec3da ray_dir(dir);
+  Vec3da tri_norm(mbray.Ng[0], mbray.Ng[1], mbray.Ng[2]);
+
+  if (mbray.geomID != RTC_INVALID_GEOMETRY_ID) {
+    result = dot(ray_dir, tri_norm) > 0.0 ? 1 : 0;
+  }
+  else {
+    result = 0;
+  }
+
+  
+}
+
+
 void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
                                        const double point[3],
                                        const double dir[3],
