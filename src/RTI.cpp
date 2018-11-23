@@ -118,6 +118,7 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
   mbray.geomID = RTC_INVALID_GEOMETRY_ID;
   mbray.primID = RTC_INVALID_GEOMETRY_ID;
   mbray.rf_type = RayFireType::RF;
+  mbray.orientation = ray_orientation;
   mbray.mask = -1;
   
   if (history) { mbray.rh = history; }
@@ -132,12 +133,11 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
   neg_ray.set_org(point);
   neg_ray.set_dir(-mbray.ddir);
   neg_ray.tnear = 0.0;
-  neg_ray.instID = volume;
   neg_ray.geomID = -1;
   neg_ray.primID = -1;
-  if( history ) {
-    neg_ray.rh = history;
-  }
+  neg_ray.rf_type = RayFireType::RF;
+  neg_ray.orientation = -ray_orientation;
+  if (history) { neg_ray.rh = history; }
   neg_ray.tfar = neg_ray_len;
   
   rtcIntersect(scene, *((RTCRay*)&neg_ray));

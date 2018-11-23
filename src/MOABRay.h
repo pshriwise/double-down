@@ -32,21 +32,23 @@ struct MBRay : RTCDRay {
     surf_handle = 0;
     prim_handle = 0;
     rh = NULL;
+    orientation = 0;
   }
 
   moab::EntityHandle surf_handle, prim_handle;
   
   moab::GeomQueryTool::RayHistory* rh;
-  
+
+  int orientation;
 };
 
 double dot_prod(RTCDRay ray);
 
 bool in_facets(MBRay ray, moab::EntityHandle tri);
 
-void backface_cull(MBRay &ray, void*);
+void backface_cull(MBRay &ray, void* = NULL);
 
-void frontface_cull(MBRay &ray, void*);
+void frontface_cull(MBRay &ray, void* = NULL);
 
 void count_hits(MBRayAccumulate &ray, void*);
 

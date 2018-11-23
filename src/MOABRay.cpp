@@ -21,13 +21,13 @@ bool in_facets(MBRay ray, moab::EntityHandle tri) {
 void backface_cull(MBRay &ray, void*) {
 
   if( in_facets(ray, ray.primID) ) {
-    ray.geomID = -1;
-    ray.primID = -1;
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.primID = RTC_INVALID_GEOMETRY_ID;
   }
       
   if(dot_prod(ray) < 0.0) {
-    ray.geomID = -1;
-    ray.primID = -1;
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.primID = RTC_INVALID_GEOMETRY_ID;
   }
 
   return;
@@ -36,13 +36,13 @@ void backface_cull(MBRay &ray, void*) {
 void frontface_cull(MBRay &ray, void*) {
 
   if( in_facets(ray, ray.primID) ) {
-    ray.geomID = -1;
-    ray.primID = -1;
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.primID = RTC_INVALID_GEOMETRY_ID;
   }
 
   if(dot_prod(ray) > 0.0) {
-    ray.geomID = -1;
-    ray.primID = -1;
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.primID = RTC_INVALID_GEOMETRY_ID;
   }
 
   return;
@@ -57,8 +57,8 @@ void count_hits(MBRayAccumulate &ray, void*) {
     ray.sum += 1; // entering
   }
 
-  ray.geomID = -1;
-  ray.primID = -1;
+  ray.geomID = RTC_INVALID_GEOMETRY_ID;
+  ray.primID = RTC_INVALID_GEOMETRY_ID;
 
   ray.num_hit++;
   return;
@@ -73,14 +73,22 @@ void MBDblTriIntersectFunc(void* tris_i, MBRay& ray, size_t item) {
   const DblTri& this_tri = tris[item];
 
   // set surf and tri handle if hit was found
-  if(ray.geomID != RTC_INVALID_GEOMETRY_ID && ray.rh && !ray.rh->in_history(this_tri.handle)) {
-    ray.prim_handle = this_tri.handle;
-  } else {
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    ray.primID = RTC_INVALID_GEOMETRY_ID;
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID) {
+    if (ray.rh) {
+      if (!ray.rh->in_history(this_tri.handle)) {
+        ray.prim_handle = this_tri.handle;
+      } else {
+        ray.geomID = RTC_INVALID_GEOMETRY_ID;
+        ray.primID = RTC_INVALID_GEOMETRY_ID;
+      }
+    }
+    
+    if (ray.orientation == 1) {
+      frontface_cull(ray);
+    } else if (ray.orientation == -1) {
+      backface_cull(ray);
+    }
   }
-
-
   
   return;
 }
