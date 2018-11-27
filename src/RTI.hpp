@@ -33,7 +33,8 @@ class RayTracingInterface{
                            const double xyz[3],
                            int& result,
                            const double *uvw,
-                           moab::GeomQueryTool::RayHistory *history);
+                           moab::GeomQueryTool::RayHistory *history,
+                           double overlap_tol = 0.0);
 
   void ray_fire(moab::EntityHandle volume, const double origin[3],
                 const double dir[3], RayFireType filt_func, double tnear,

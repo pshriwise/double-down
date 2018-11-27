@@ -65,9 +65,9 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
         emtris[k].geomID = emsurf;
       } // end tris loop
 
-      rtcSetIntersectionFilterFunction(scene, emsurf, (RTCFilterFunc)&DblTriIntersectFunc);
+      rtcSetIntersectionFilterFunction(scene, emsurf, (RTCFilterFunc)&MBDblTriIntersectFunc);
       rtcSetBoundsFunction(scene, emsurf, (RTCBoundsFunc)&DblTriBounds);
-      rtcSetIntersectFunction(scene, emsurf, (RTCIntersectFunc)&MBDblTriIntersectFunc);
+      rtcSetIntersectFunction(scene, emsurf, (RTCIntersectFunc)&DblTriIntersectFunc);
       rtcSetOccludedFunction(scene, emsurf, (RTCOccludedFunc)&DblTriOccludedFunc);
     
     } // end surface loop
@@ -98,7 +98,8 @@ void RayTracingInterface::dag_point_in_volume(const moab::EntityHandle volume,
                                               const double xyz[3],
                                               int& result,
                                               const double *uvw,
-                                              moab::GeomQueryTool::RayHistory *history) {
+                                              moab::GeomQueryTool::RayHistory *history,
+                                              double overlap_tol) {
   const double huge_val = std::numeric_limits<double>::max();
   double dist_limit = huge_val;
 
@@ -124,7 +125,7 @@ void RayTracingInterface::dag_point_in_volume(const moab::EntityHandle volume,
   mbray.geomID = RTC_INVALID_GEOMETRY_ID;
   mbray.primID = RTC_INVALID_GEOMETRY_ID;
   mbray.rf_type = RayFireType::PIV;
-  mbray.orientation = -1;
+  mbray.orientation = 1;
   mbray.mask = -1;
   if (history) { mbray.rh = history; }
 
@@ -132,7 +133,7 @@ void RayTracingInterface::dag_point_in_volume(const moab::EntityHandle volume,
   rtcIntersect(scene, *((RTCRay*)&mbray));
 
   Vec3da ray_dir(dir);
-  Vec3da tri_norm(mbray.Ng[0], mbray.Ng[1], mbray.Ng[2]);
+  Vec3da tri_norm(mbray.dNg[0], mbray.dNg[1], mbray.dNg[2]);
 
   if (mbray.geomID != RTC_INVALID_GEOMETRY_ID) {
     result = dot(ray_dir, tri_norm) > 0.0 ? 1 : 0;
@@ -141,7 +142,32 @@ void RayTracingInterface::dag_point_in_volume(const moab::EntityHandle volume,
     result = 0;
   }
 
-  
+  if (overlap_tol != 0.0) {
+    MBRayAccumulate aray;
+    aray.set_org(xyz);
+    aray.set_dir(dir);
+    aray.instID = volume;
+    aray.set_len(dist_limit);
+    aray.rf_type = RayFireType::ACCUM;
+    aray.sum = 0;
+    aray.num_hit = 0;
+
+    rtcIntersect(scene, *((RTCRay*)&aray));
+    if (aray.num_hit == 0) { result = 0; return; }
+    int hits = aray.num_hit;
+
+    aray.geomID = -1;
+    aray.primID = -1;
+    aray.set_len(dist_limit);
+    aray.tnear = 0.0;
+    aray.set_dir(aray.ddir*-1);
+    rtcIntersect(scene, *((RTCRay*)&aray));
+    if (aray.num_hit == hits) { result = 0; return; }
+
+        // inside/outside depends on the sum
+    if      (0 < aray.sum)                                          result = 0; // pt is outside (for all vols)
+    else if (0 > aray.sum)                                          result = 1; // pt is inside  (for all vols)
+  }
 }
 
 
@@ -222,7 +248,7 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
     next_surf = neg_ray.geomID;
   }
   else if ( mbray.geomID != RTC_INVALID_GEOMETRY_ID) {
-    next_surf_dist = mbray.tfar;
+    next_surf_dist = mbray.dtfar;
     next_surf = mbray.geomID;
   }
   else {

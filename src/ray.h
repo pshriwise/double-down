@@ -6,7 +6,7 @@
 #include "Vec3da.h"
 
 // This might go away with the alorithm update
-enum RayFireType { RF, PIV };
+enum RayFireType { RF, PIV, ACCUM };
 
 struct RTCRay2 : RTCRay { RayFireType rf_type; };
 
