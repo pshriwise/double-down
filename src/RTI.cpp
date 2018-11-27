@@ -62,12 +62,13 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
       for (int k = 0; k < num_tris; k++) {
         emtris[k].moab_instance = MBI;
         emtris[k].handle = tris[k];
+        emtris[k].surf = this_surf;
         emtris[k].geomID = emsurf;
       } // end tris loop
 
       rtcSetIntersectionFilterFunction(scene, emsurf, (RTCFilterFunc)&MBDblTriIntersectFunc);
       rtcSetBoundsFunction(scene, emsurf, (RTCBoundsFunc)&DblTriBounds);
-      rtcSetIntersectFunction(scene, emsurf, (RTCIntersectFunc)&DblTriIntersectFunc);
+      rtcSetIntersectFunction(scene, emsurf, (RTCIntersectFunc)&MBDblTriIntersectFunc);
       rtcSetOccludedFunction(scene, emsurf, (RTCOccludedFunc)&DblTriOccludedFunc);
     
     } // end surface loop
@@ -174,7 +175,7 @@ void RayTracingInterface::dag_point_in_volume(const moab::EntityHandle volume,
 void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
                                        const double point[3],
                                        const double dir[3],
-                                       int& next_surf,
+                                       moab::EntityHandle& next_surf,
                                        double& next_surf_dist,
                                        moab::GeomQueryTool::RayHistory* history,
                                        double user_dist_limit,
@@ -183,6 +184,8 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
   const double huge_val = std::numeric_limits<double>::max();
   double dist_limit = huge_val;
   if (user_dist_limit > 0) { dist_limit = user_dist_limit; }
+
+  next_surf = 0; next_surf_dist = huge_val;
 
   RTCScene scene = scenes[volume - sceneOffset];
   
@@ -245,11 +248,11 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
 
   if(use_neg_intersection) {
     next_surf_dist = 0;
-    next_surf = neg_ray.geomID;
+    next_surf = neg_ray.surf_handle;
   }
   else if ( mbray.geomID != RTC_INVALID_GEOMETRY_ID) {
     next_surf_dist = mbray.dtfar;
-    next_surf = mbray.geomID;
+    next_surf = mbray.surf_handle;
   }
   else {
     next_surf_dist = 1E37;

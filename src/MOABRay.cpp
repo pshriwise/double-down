@@ -20,7 +20,7 @@ bool in_facets(MBRay ray, moab::EntityHandle tri) {
 
 void backface_cull(MBRay &ray, void*) {
 
-  if( in_facets(ray, ray.primID) ) {
+  if( in_facets(ray, ray.prim_handle) ) {
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
   }
@@ -35,7 +35,7 @@ void backface_cull(MBRay &ray, void*) {
 
 void frontface_cull(MBRay &ray, void*) {
 
-  if( in_facets(ray, ray.primID) ) {
+  if( in_facets(ray, ray.prim_handle) ) {
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
   }
@@ -61,41 +61,40 @@ void count_hits(MBRayAccumulate* ray) {
 
   ray->geomID = RTC_INVALID_GEOMETRY_ID;
   ray->primID = RTC_INVALID_GEOMETRY_ID;
-
   ray->num_hit++;
   
   return;
 }
 
-
 void MBDblTriIntersectFunc(void* tris_i, MBRay& ray, size_t item) {
+  double orig_dist = ray.dtfar;
   DblTriIntersectFunc(tris_i, ray, item);
+    
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) { return; }
+  
   const DblTri* tris = (const DblTri*) tris_i;
   const DblTri& this_tri = tris[item];
+
+  ray.prim_handle = this_tri.handle;
+  ray.surf_handle = this_tri.surf;
   
   if (ray.rf_type == RayFireType::RF || ray.rf_type == RayFireType::PIV) {
-    
-    // set surf and tri handle if hit was found
-    if (ray.geomID != RTC_INVALID_GEOMETRY_ID) {
-      if (ray.rh) {
-        if (!ray.rh->in_history(this_tri.handle)) {
-          ray.prim_handle = this_tri.handle;
-        } else {
-          ray.geomID = RTC_INVALID_GEOMETRY_ID;
-          ray.primID = RTC_INVALID_GEOMETRY_ID;
-        }
-      }
 
-      if (ray.rf_type == RayFireType::RF) {
-        if (ray.orientation == 1) {
-          backface_cull(ray);
-        } else if (ray.orientation == -1) {
-          frontface_cull(ray);
-        }
+    if (ray.rf_type == RayFireType::RF) {
+      if (ray.orientation == 1) {
+        backface_cull(ray);
+      } else if (ray.orientation == -1) {
+        frontface_cull(ray);
       }
     }
   } else if (ray.rf_type == RayFireType::ACCUM) {
     count_hits((MBRayAccumulate*)&ray);
   }
-  return;
+
+ if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
+   ray.tfar = orig_dist;
+   ray.dtfar = orig_dist;
+ }
+
+return;
 }

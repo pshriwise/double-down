@@ -43,7 +43,7 @@ class RayTracingInterface{
   void dag_ray_fire(const moab::EntityHandle volume,
                     const double point[3],
                     const double dir[3],
-                    int& next_surf,
+                    moab::EntityHandle& next_surf,
                     double& next_surf_dist,
                     moab::GeomQueryTool::RayHistory* history,
                     double user_dist_limit,

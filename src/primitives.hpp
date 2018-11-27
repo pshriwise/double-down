@@ -13,6 +13,7 @@ struct DblTri {
   void* moab_instance;
   moab::EntityHandle handle;
   unsigned int geomID;
+  moab::EntityHandle surf;
   uint8_t sense;
 };
 
