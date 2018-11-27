@@ -66,11 +66,9 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
         emtris[k].geomID = emsurf;
       } // end tris loop
 
-      rtcSetIntersectionFilterFunction(scene, emsurf, (RTCFilterFunc)&MBDblTriIntersectFunc);
       rtcSetBoundsFunction(scene, emsurf, (RTCBoundsFunc)&DblTriBounds);
       rtcSetIntersectFunction(scene, emsurf, (RTCIntersectFunc)&MBDblTriIntersectFunc);
       rtcSetOccludedFunction(scene, emsurf, (RTCOccludedFunc)&DblTriOccludedFunc);
-    
     } // end surface loop
 
     rtcCommit(scene);
