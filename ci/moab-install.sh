@@ -2,8 +2,8 @@
 set -ex
 
 # MOAB Variables
-MOAB_BRANCH='Version5.0'
-MOAB_REPO='https://bitbucket.org/fathomteam/moab/'
+MOAB_BRANCH='rh_separate'
+MOAB_REPO='https://bitbucket.org/pshriwise/moab/'
 MOAB_INSTALL_DIR=$HOME/MOAB/
 
 CURRENT_DIR=$(pwd)
