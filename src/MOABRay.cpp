@@ -51,11 +51,9 @@ void frontface_cull(MBRay &ray, void*) {
 void count_hits(MBRayAccumulate* ray) {
 
   if (dot_prod(*ray) > 0.0) {
-    std::cout << "Minus one" << std::endl;
     ray->sum -= 1; // leaving
   }
   else {
-    std::cout << "Plus one" << std::endl;
     ray->sum += 1; // entering
   }
 

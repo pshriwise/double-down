@@ -69,6 +69,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
       rtcSetBoundsFunction(scene, emsurf, (RTCBoundsFunc)&DblTriBounds);
       rtcSetIntersectFunction(scene, emsurf, (RTCIntersectFunc)&MBDblTriIntersectFunc);
       rtcSetOccludedFunction(scene, emsurf, (RTCOccludedFunc)&DblTriOccludedFunc);
+
     } // end surface loop
 
     rtcCommit(scene);
