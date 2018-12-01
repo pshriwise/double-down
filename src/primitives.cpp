@@ -3,7 +3,6 @@
 
 void intersectionFilter(void* ptr, RTCDRay &ray) 
 {
-
   switch(ray.rf_type) 
     {
     case 0: //if this is a typical ray_fire, check the dot_product
@@ -13,7 +12,6 @@ void intersectionFilter(void* ptr, RTCDRay &ray)
     case 1: //if this is a point_in_vol fire, do nothing
       break;
     }
-
 }
 
 
@@ -61,7 +59,7 @@ void DblTriIntersectFunc(void* tris_i, RTCDRay& ray, size_t item) {
 
   const DblTri* tris = (const DblTri*) tris_i;
   const DblTri& this_tri = tris[item];  
-
+  
   moab::Interface* mbi = (moab::Interface*) this_tri.moab_instance;
   moab::ErrorCode rval;
 
@@ -102,6 +100,8 @@ void DblTriIntersectFunc(void* tris_i, RTCDRay& ray, size_t item) {
     ray.dNg[0] = normal[0];
     ray.dNg[1] = normal[1];
     ray.dNg[2] = normal[2];
+  } else {
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
   }
 
   return;

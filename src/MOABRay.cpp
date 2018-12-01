@@ -40,7 +40,7 @@ void frontface_cull(MBRay &ray, void*) {
     ray.primID = RTC_INVALID_GEOMETRY_ID;
   }
 
-  if(dot_prod(ray) > 0.0) {
+  if(dot_prod(ray) >= 0.0) {
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.primID = RTC_INVALID_GEOMETRY_ID;
   }
@@ -65,10 +65,14 @@ void count_hits(MBRayAccumulate* ray) {
 }
 
 void MBDblTriIntersectFunc(void* tris_i, MBRay& ray, size_t item) {
+  MBRay orig_ray = ray;
   double orig_dist = ray.dtfar;
   DblTriIntersectFunc(tris_i, ray, item);
     
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) { return; }
+  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
+    ray = orig_ray;
+    return;
+  }
   
   const DblTri* tris = (const DblTri*) tris_i;
   const DblTri& this_tri = tris[item];
@@ -90,8 +94,7 @@ void MBDblTriIntersectFunc(void* tris_i, MBRay& ray, size_t item) {
   }
 
  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
-   ray.tfar = orig_dist;
-   ray.dtfar = orig_dist;
+   ray = orig_ray;
  }
 
 return;

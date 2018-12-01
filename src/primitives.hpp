@@ -14,7 +14,7 @@ struct DblTri {
   moab::EntityHandle handle;
   unsigned int geomID;
   moab::EntityHandle surf;
-  uint8_t sense;
+  int sense;
 };
 
 void DblTriBounds(void* tris_i, size_t item, RTCBounds& bounds_o);

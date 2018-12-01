@@ -34,7 +34,8 @@ class RayTracingInterface{
                            int& result,
                            const double *uvw,
                            moab::GeomQueryTool::RayHistory *history,
-                           double overlap_tol = 0.0);
+                           double overlap_tol = 0.0,
+                           moab::EntityHandle = 0);
 
   void ray_fire(moab::EntityHandle volume, const double origin[3],
                 const double dir[3], RayFireType filt_func, double tnear,
@@ -45,9 +46,9 @@ class RayTracingInterface{
                     const double dir[3],
                     moab::EntityHandle& next_surf,
                     double& next_surf_dist,
-                    moab::GeomQueryTool::RayHistory* history,
-                    double user_dist_limit,
-                    int ray_orientation);
+                    moab::GeomQueryTool::RayHistory* history = NULL,
+                    double user_dist_limit = 0,
+                    int ray_orientation = 1);
   
   bool point_in_vol(float coordinate[3], float dir[3]);
 
@@ -58,6 +59,7 @@ class RayTracingInterface{
   private:
   moab::Interface* MBI;
   std::vector<DblTri*> tri_buffers;
+  std::map<moab::EntityHandle, RTCScene> scene_map;
   std::vector<RTCScene> scenes;
   moab::EntityHandle sceneOffset;
   
