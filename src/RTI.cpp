@@ -8,15 +8,15 @@
 
 moab::ErrorCode RayTracingInterface::init(std::string filename) {
   moab::ErrorCode rval;
-  
+
   if ("" == filename && NULL == MBI) {
-    return moab::MB_FAILURE; 
+    return moab::MB_FAILURE;
   } else if (!MBI) {
     MBI = new moab::Core();
     rval = MBI->load_file(filename.c_str());
     MB_CHK_SET_ERR(rval, "Failed to load the specified MOAB file");
   }
-    
+
   rtcInit();
 
   moab::Range vols;
@@ -31,24 +31,24 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
   // create an Embree geometry instance for each surface
   for (moab::Range::iterator i = vols.begin(); i != vols.end(); i++) {
     moab::EntityHandle vol = *i;
-    
+
     // add to scenes vec
     RTCScene scene = rtcNewScene(RTC_SCENE_ROBUST , RTC_INTERSECT1);
     scenes.push_back(scene);
     scene_map[vol] = scene;
-    
+
     // get volume surfaces
     moab::Range surfs;
     rval = MBI->get_child_meshsets(vol, surfs);
     MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces.");
-    
+
     for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
       moab::EntityHandle this_surf = *j;
       // find the surface sense
       int sense;
       rval = GTT->get_sense(this_surf, vol, sense);
       MB_CHK_SET_ERR(rval, "Failed to get sense for surface");
-      
+
       // get all triangles on this surface
       moab::Range tris;
       rval = MBI->get_entities_by_type(this_surf, moab::MBTRI, tris);
@@ -62,8 +62,9 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
       DblTri* emtris = (DblTri*) malloc(num_tris*sizeof(DblTri));
 
       rtcSetUserData(scene, emsurf, emtris);
-      
-      tri_buffers.push_back(emtris);
+
+      buffer_storage.store(vol, num_tris, emtris);
+
       for (int k = 0; k < num_tris; k++) {
         emtris[k].moab_instance = MBI;
         emtris[k].handle = tris[k];
@@ -83,23 +84,21 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
   } // end volume loop
 
   delete GTT;
-  
+
   return moab::MB_SUCCESS;
 }
 void RayTracingInterface::shutdown() {
   for(auto s : scenes) { rtcDeleteScene(s); }
 
-  for(auto b : tri_buffers) { free(b); }
-
   if(MBI) { delete MBI; }
-  
+
   rtcExit();
 }
 
 void RayTracingInterface::fire(moab::EntityHandle vol, RTCDRay &ray) {
 
   rtcIntersect(scenes[vol-sceneOffset], *((RTCRay*)&ray));
-  
+
 }
 
 void RayTracingInterface::dag_point_in_volume(const moab::EntityHandle volume,
@@ -124,7 +123,7 @@ void RayTracingInterface::dag_point_in_volume(const moab::EntityHandle volume,
     dir[1] = 0.5;
     dir[2] = 0.5;
   }
-    
+
   MBRay mbray;
   mbray.set_org(xyz);
   mbray.set_dir(dir);
@@ -197,7 +196,7 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
   next_surf = 0; next_surf_dist = huge_val;
 
   RTCScene scene = scene_map[volume];
-  
+
   MBRay mbray;
   mbray.set_org(point);
   mbray.set_dir(dir);
@@ -207,9 +206,9 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
   mbray.primID = RTC_INVALID_GEOMETRY_ID;
   mbray.rf_type = RayFireType::RF;
   mbray.orientation = ray_orientation;
-  mbray.mask = -1;  
+  mbray.mask = -1;
   if (history) { mbray.rh = history; }
-    
+
   // fire ray
   rtcIntersect(scene, *((RTCRay*)&mbray));
   // check behind the ray origin for intersections
@@ -225,7 +224,7 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
   neg_ray.orientation = -ray_orientation;
   if (history) { neg_ray.rh = history; }
   neg_ray.set_len(neg_ray_len);
-  
+
   rtcIntersect(scene, *((RTCRay*)&neg_ray));
 
   bool use_neg_intersection = false;
@@ -269,16 +268,16 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
     if(use_neg_intersection) {
       history->add_entity(neg_ray.prim_handle);
     }
-    else { 
+    else {
       history->add_entity(mbray.prim_handle);
     }
   }
-  
+
 }
 
 moab::ErrorCode RayTracingInterface::get_vols(moab::Range& vols) {
   moab::ErrorCode rval;
-  
+
   // retrieve vols
   moab::Tag geom_tag;
   rval = MBI->tag_get_handle("GEOM_DIMENSION", geom_tag);

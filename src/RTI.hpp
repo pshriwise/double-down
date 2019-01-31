@@ -11,13 +11,50 @@
 #include "primitives.hpp"
 #include "MOABRay.h"
 
-class RayTracingInterface{
-  
+class RayTracingInterface {
+
+  class DblTriStorage {
+  private:
+    std::map<moab::EntityHandle, std::pair<int, DblTri*>> storage_;
+
+  public:
+    bool is_storing(moab::EntityHandle vol) {
+      return storage_.count(vol);
+    }
+
+    bool is_storing(DblTri* ptr) {
+      for (auto it : storage_) {
+        if (it.second.second == ptr) return true;
+      }
+      return false;
+    }
+
+    void store(moab::EntityHandle vol, int size, DblTri* ptr) {
+      if (!is_storing(ptr)) {
+        storage_[vol] = {size, ptr};
+      }
+    }
+
+    std::pair<int, DblTri*> retrieve_buffer(moab::EntityHandle vol) {
+      return storage_[vol];
+    }
+
+    void clear() {
+      for (auto it : storage_) {
+        free(it.second.second);
+      }
+      storage_.clear();
+    }
+
+  };
+
   public:
   RayTracingInterface(moab::Interface* mbi) : MBI(mbi) { }
 
   RayTracingInterface() : MBI(NULL) { }
-  
+
+  ~RayTracingInterface() { buffer_storage.clear(); }
+
   // Public Functions
   moab::ErrorCode init(std::string filename = "");
   void set_offset(moab::Range &vols);
@@ -49,7 +86,7 @@ class RayTracingInterface{
                     moab::GeomQueryTool::RayHistory* history = NULL,
                     double user_dist_limit = 0,
                     int ray_orientation = 1);
-  
+
   bool point_in_vol(float coordinate[3], float dir[3]);
 
   moab::ErrorCode get_vols(moab::Range& vols);
@@ -58,11 +95,12 @@ class RayTracingInterface{
   // Member variables
   private:
   moab::Interface* MBI;
-  std::vector<DblTri*> tri_buffers;
+  DblTriStorage buffer_storage;
   std::map<moab::EntityHandle, RTCScene> scene_map;
+  std::map<moab::EntityHandle, std::vector<DblTri*>> tri_ref_storage;
   std::vector<RTCScene> scenes;
   moab::EntityHandle sceneOffset;
-  
+
 };
 
 #endif
