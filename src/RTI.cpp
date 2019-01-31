@@ -87,6 +87,40 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
 
   return moab::MB_SUCCESS;
 }
+
+void BuildBVH(moab::EntityHandle vol) {
+
+  RTCDevice device = rtcNewDevice();
+
+  RTCBVH bvh = rtcNewBVH(device);
+
+  /* settings for BVH build */
+  const size_t extraSpace = 1000000;
+  RTCBuildSettings settings;
+  settings.size = sizeof(settings);
+  settings.quality = RTC_BUILD_QUALITY_HIGH;
+  settings.maxBranchingFactor = 2;
+  settings.maxDepth = 1024;
+  settings.sahBlockSize = 1;
+  settings.minLeafSize = 1;
+  settings.maxLeafSize = 1;
+  settings.travCost = 1.0f;
+  settings.intCost = 1.0f;
+  settings.extraSpace = extraSpace;
+
+
+  std::pair<int, DblTri*> buffer;
+
+  for(int i = 0; i < buffer.first; i++) {
+    DblTri dtri = buffer.second[i];
+
+    RTCBounds bounds = DblTriBounds((moab::Interface*)dtri.moab_instance,
+                                    dtri.handle);
+
+  }
+
+}
+
 void RayTracingInterface::shutdown() {
   for(auto s : scenes) { rtcDeleteScene(s); }
 

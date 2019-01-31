@@ -1,4 +1,3 @@
-
 #ifndef DD_RTI_H
 #define DD_RTI_H
 
@@ -91,6 +90,8 @@ class RayTracingInterface {
 
   moab::ErrorCode get_vols(moab::Range& vols);
   void fire(moab::EntityHandle vol, RTCDRay &ray);
+
+  void BuildBVH(moab::EntityHandle vol);
 
   // Member variables
   private:
