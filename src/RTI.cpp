@@ -5,6 +5,71 @@
 
 // Local
 #include "RTI.hpp"
+#include "AABB.h"
+
+struct Node
+{
+  virtual float sah() = 0;
+};
+
+
+
+  struct InnerNode : public Node
+  {
+    AABB bounds[2];
+    Node* children[2];
+
+    InnerNode() {
+      bounds[0] = bounds[1] = empty;
+      children[0] = children[1] = nullptr;
+    }
+
+    float sah() {
+      return 1.0f + (area(bounds[0])*children[0]->sah() + area(bounds[1])*children[1]->sah())/area(merge(bounds[0],bounds[1]));
+    }
+
+    static void* create (RTCThreadLocalAllocator alloc, size_t numChildren, void* userPtr)
+    {
+      assert(numChildren == 2);
+      void* ptr = rtcThreadLocalAlloc(alloc,sizeof(InnerNode),16);
+      return (void*) new (ptr) InnerNode;
+    }
+
+    static void  setChildren (void* nodePtr, void** childPtr, size_t numChildren, void* userPtr)
+    {
+      assert(numChildren == 2);
+      for (size_t i=0; i<2; i++)
+        ((InnerNode*)nodePtr)->children[i] = (Node*) childPtr[i];
+    }
+
+    static void  setBounds (void* nodePtr, const RTCBounds** bounds, size_t numChildren, void* userPtr)
+    {
+      assert(numChildren == 2);
+      for (size_t i=0; i<2; i++)
+        ((InnerNode*)nodePtr)->bounds[i] = *(const AABB*) bounds[i];
+    }
+  };
+
+  struct LeafNode : public Node
+  {
+    unsigned id;
+    AABB bounds;
+
+    LeafNode (unsigned id, const AABB& bounds)
+      : id(id), bounds(bounds) {}
+
+    float sah() {
+      return 1.0f;
+    }
+
+    static void* create (RTCThreadLocalAllocator alloc, const RTCBuildPrimitive* prims, size_t numPrims, void* userPtr)
+    {
+      assert(numPrims == 1);
+      void* ptr = rtcThreadLocalAlloc(alloc,sizeof(LeafNode),16);
+      return (void*) new (ptr) LeafNode(prims->primID,*(AABB*)prims);
+    }
+  };
+
 
 moab::ErrorCode RayTracingInterface::init(std::string filename) {
   moab::ErrorCode rval;
@@ -108,16 +173,37 @@ void BuildBVH(moab::EntityHandle vol) {
   settings.intCost = 1.0f;
   settings.extraSpace = extraSpace;
 
-
   std::pair<int, DblTri*> buffer;
 
+  std::vector<RTCBuildPrimitive> prims;
+  prims.resize(buffer.first);
   for(int i = 0; i < buffer.first; i++) {
     DblTri dtri = buffer.second[i];
 
     RTCBounds bounds = DblTriBounds((moab::Interface*)dtri.moab_instance,
                                     dtri.handle);
-
+    RTCBuildPrimitive prim;
+    prim.lower_x = bounds.lower_x;
+    prim.lower_y = bounds.lower_y;
+    prim.lower_z = bounds.lower_z;
+    prim.geomID = 0;
+    prim.upper_x = bounds.upper_x;
+    prim.upper_y = bounds.upper_y;
+    prim.upper_z = bounds.upper_z;
+    prims[i] = prim;
   }
+
+  Node* root = (Node*) rtcBuildBVH(bvh,
+                                   settings,
+                                   prims.data(),
+                                   prims.size(),
+                                   InnerNode::create,
+                                   InnerNode::setChildren,
+                                   InnerNode::setBounds,
+                                   LeafNode::create,
+                                   NULL,
+                                   NULL,
+                                   NULL);
 
 }
 

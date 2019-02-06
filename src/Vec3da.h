@@ -15,7 +15,7 @@
 #define __forceinline inline __attribute__((always_inline))
 #endif
 
-static const float min_rcp_input = std::numeric_limits<float>::min();
+#include "constants.h"
 
 struct Vec3da {
   typedef double Scalar;
@@ -39,7 +39,7 @@ struct Vec3da {
   __forceinline Vec3da( const double px, const double py, const double pz) { x = px; y = py; z = pz; a = pz;}
 
   __forceinline Vec3da( const double px, const double py, const double pz, const int pa) { x = px; y = py; z = pz; a = pa; }
-    
+
   /* __forceinline Vec3da( ZeroTy ) { x = 0.0f; y = 0.0f; z = 0.0f; a = 0;} */
   /* __forceinline Vec3da( PosInfTy ) { x = inf; y = inf; z = inf; a = inf; }; */
   /* __forceinline Vec3da( NegInfTy ) { x = neg_inf; y = neg_inf; z = neg_inf; a = neg_inf; }; */
@@ -48,7 +48,7 @@ struct Vec3da {
   __forceinline       double& operator[](const size_t index)       { assert(index < 3); return (&x)[index]; }
 
   __forceinline double length () const { return sqrt(length_sqr()); }
-  
+
   __forceinline double length_sqr () const { return x*x + y*y + z*z; }
 
   __forceinline Vec3da normalize() { double len = length();
@@ -62,7 +62,7 @@ struct Vec3da {
     __forceinline Vec3da operator *=(const Vec3da& v) { x = x * v.x; y = y *v.y; z = z * v.z; return *this; }
 
     __forceinline Vec3da operator /=(const Vec3da& v) { x = x / v.x; y = y /v.y; z = z / v.z; return *this; }
-  
+
 };
 
 
