@@ -10,6 +10,8 @@
 #include "primitives.hpp"
 #include "MOABRay.h"
 
+class Node;
+
 class RayTracingInterface {
 
   class DblTriStorage {
@@ -91,7 +93,7 @@ class RayTracingInterface {
   moab::ErrorCode get_vols(moab::Range& vols);
   void fire(moab::EntityHandle vol, RTCDRay &ray);
 
-  void BuildBVH(moab::EntityHandle vol);
+  void buildBVH(moab::EntityHandle vol);
 
   // Member variables
   private:
@@ -101,7 +103,7 @@ class RayTracingInterface {
   std::map<moab::EntityHandle, std::vector<DblTri*>> tri_ref_storage;
   std::vector<RTCScene> scenes;
   moab::EntityHandle sceneOffset;
-
+  std::map<moab::EntityHandle, Node*> root_map;
 };
 
 #endif

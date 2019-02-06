@@ -153,8 +153,9 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
   return moab::MB_SUCCESS;
 }
 
-void BuildBVH(moab::EntityHandle vol) {
+void RayTracingInterface::buildBVH(moab::EntityHandle vol) {
 
+  std::cout << "Building tree for volume with handle: " << vol << "\n";
   RTCDevice device = rtcNewDevice();
 
   RTCBVH bvh = rtcNewBVH(device);
@@ -173,10 +174,11 @@ void BuildBVH(moab::EntityHandle vol) {
   settings.intCost = 1.0f;
   settings.extraSpace = extraSpace;
 
-  std::pair<int, DblTri*> buffer;
+  std::pair<int, DblTri*> buffer = buffer_storage.retrieve_buffer(vol);
 
   std::vector<RTCBuildPrimitive> prims;
   prims.resize(buffer.first);
+
   for(int i = 0; i < buffer.first; i++) {
     DblTri dtri = buffer.second[i];
 
@@ -204,6 +206,7 @@ void BuildBVH(moab::EntityHandle vol) {
                                    NULL,
                                    NULL,
                                    NULL);
+  root_map[vol] = root;
 
 }
 
