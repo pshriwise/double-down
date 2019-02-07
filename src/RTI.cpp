@@ -65,6 +65,7 @@ struct Node
 
     static void* create (RTCThreadLocalAllocator alloc, const RTCBuildPrimitive* prims, size_t numPrims, void* userPtr)
     {
+      std::cout << "Creating leaf node with " << numPrims << " primitives.\n";
       assert(numPrims == 1);
       void* ptr = rtcThreadLocalAlloc(alloc,sizeof(LeafNode),16);
       return (void*) new (ptr) LeafNode(prims->primID,*(AABB*)prims);
@@ -179,6 +180,8 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
 
     rtcCommit(scene);
 
+    buildBVH(vol);
+
   } // end volume loop
 
   delete GTT;
@@ -261,7 +264,7 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
   stack[0].dist = neg_inf;
 
   Vec3da closest;
-  double current_result;
+  double current_result = inf;
   while (true) pop:
     {
       // stack is empty, we're done
@@ -291,6 +294,8 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
           stackPtr->dist = d2;
 
           sort(*(stackPtr),*(stackPtr-1));
+
+          cur = stackPtr->ptr;
         }
 
       LeafNode* leaf = dynamic_cast<LeafNode*>(cur);
@@ -298,9 +303,12 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
       DblTri this_prim = buffer.second[leaf->id];
 
       double tmp = DblTriClosestFunc(this_prim, loc);
+      std::cout << "TMP : " << tmp << std::endl;
+      double current_result = std::min(tmp, current_result);
     }
 
-
+  result = current_result;
+  return;
 
 }
 
