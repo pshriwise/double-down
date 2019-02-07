@@ -126,9 +126,18 @@ struct AABB {
     return all(le_mask(lower, upper));
   }
 
+  // determines if a point is inside the box
+  __forceinline bool inside ( const Vec3fa& p ) { return all( ge_mask(p,lower)) && all(le_mask(p,upper) ); }
+
+
   __forceinline float nearest(const float pnt[3]) {
-    Vec3fa pnt_to_center = center() - Vec3fa(pnt);
-    return pnt_to_center.length();
+    if(inside(pnt)) { return 0.0f; }
+
+    Vec3fa closest;
+    closest[0] = pnt[0] < lower[0] ? lower[0] : pnt[0] > upper[0] ? upper[0] : pnt[0];
+    closest[1] = pnt[1] < lower[1] ? lower[1] : pnt[1] > upper[1] ? upper[1] : pnt[1];
+    closest[2] = pnt[2] < lower[2] ? lower[2] : pnt[2] > upper[2] ? upper[2] : pnt[2];
+    return (closest - Vec3fa(pnt)).length();
   }
 
 };
