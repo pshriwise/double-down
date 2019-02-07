@@ -126,6 +126,11 @@ struct AABB {
     return all(le_mask(lower, upper));
   }
 
+  __forceinline float nearest(const float pnt[3]) {
+    Vec3fa pnt_to_center = center() - Vec3fa(pnt);
+    return pnt_to_center.length();
+  }
+
 };
 
 // determines if a point is inside the box
@@ -154,6 +159,7 @@ __forceinline bool operator ==(const AABB &a, const AABB& b) { return a.lower ==
 __forceinline std::ostream& operator <<( std::ostream& os, const AABB &b ) {
   return os << "Lower Corner " << b.lower << std::endl
 	    << "Upper Corner " << b.upper << std::endl;
+
 }
 
 #endif

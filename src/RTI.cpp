@@ -24,6 +24,7 @@ struct Node
       children[0] = children[1] = nullptr;
     }
 
+
     float sah() {
       return 1.0f + (area(bounds[0])*children[0]->sah() + area(bounds[1])*children[1]->sah())/area(merge(bounds[0],bounds[1]));
     }
@@ -70,6 +71,38 @@ struct Node
     }
   };
 
+template<typename T>
+struct StackItemT {
+
+  inline static void xchg(StackItemT& a, StackItemT& b) {
+    std::swap(a,b);
+  }
+
+  inline friend void sort(StackItemT& s1, StackItemT& s2) {
+    if (s1.dist < s2.dist) { xchg(s2, s1); }
+  }
+
+  inline friend void sort(StackItemT& s1, StackItemT& s2, StackItemT& s3) {
+    if (s2.dist < s1.dist) xchg(s2,s1);
+    if (s3.dist < s2.dist) xchg(s3,s2);
+    if (s2.dist < s1.dist) xchg(s2,s1);
+  }
+
+  inline friend void sort(StackItemT& s1, StackItemT& s2, StackItemT& s3, StackItemT& s4) {
+    if (s2.dist < s1.dist) xchg(s2,s1);
+    if (s4.dist < s3.dist) xchg(s4,s3);
+    if (s3.dist < s1.dist) xchg(s3,s1);
+    if (s4.dist < s2.dist) xchg(s4,s2);
+    if (s3.dist < s2.dist) xchg(s3,s2);
+  }
+
+public:
+  T ptr;
+  unsigned dist;
+
+};
+
+typedef StackItemT<Node*> StackItem;
 
 moab::ErrorCode RayTracingInterface::init(std::string filename) {
   moab::ErrorCode rval;
@@ -192,6 +225,7 @@ void RayTracingInterface::buildBVH(moab::EntityHandle vol) {
     prim.upper_x = bounds.upper_x;
     prim.upper_y = bounds.upper_y;
     prim.upper_z = bounds.upper_z;
+    prim.primID = i;
     prims[i] = prim;
   }
 
@@ -207,6 +241,66 @@ void RayTracingInterface::buildBVH(moab::EntityHandle vol) {
                                    NULL,
                                    NULL);
   root_map[vol] = root;
+
+}
+
+void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
+                                  double &result, moab::EntityHandle* surface) {
+
+
+  std::pair<int, DblTri*> buffer = buffer_storage.retrieve_buffer(vol);
+
+  size_t stackSize = 1024;
+  StackItem stack[stackSize];
+  StackItem* stackPtr = stack+1;
+  StackItem* stackEnd = stack + stackSize;
+
+  const float floc[3] = {loc[0], loc[1], loc[2]};
+
+  stack[0].ptr = root_map[vol];
+  stack[0].dist = neg_inf;
+
+  Vec3da closest;
+  double current_result;
+  while (true) pop:
+    {
+      // stack is empty, we're done
+      if(stackPtr == stack) break;
+
+      // move to next node
+      stackPtr--;
+      Node* cur = stackPtr->ptr;
+
+      // we've found a location closer than this node, move on
+      if(stackPtr->dist > current_result) { continue; }
+
+      while (true)
+        {
+          InnerNode* inode = dynamic_cast<InnerNode*>(cur);
+          if (!inode) { break; }
+          // check nodes
+          float d1 = inode->bounds[0].nearest(floc);
+          float d2 = inode->bounds[1].nearest(floc);
+
+          stackPtr->ptr = inode->children[0];
+          stackPtr->dist = d1;
+
+          stackPtr++;
+
+          stackPtr->ptr = inode->children[1];
+          stackPtr->dist = d2;
+
+          sort(*(stackPtr),*(stackPtr-1));
+        }
+
+      LeafNode* leaf = dynamic_cast<LeafNode*>(cur);
+      // at leaf
+      DblTri this_prim = buffer.second[leaf->id];
+
+      double tmp = DblTriClosestFunc(this_prim, loc);
+    }
+
+
 
 }
 

@@ -95,6 +95,10 @@ class RayTracingInterface {
 
   void buildBVH(moab::EntityHandle vol);
 
+  void closest(moab::EntityHandle vol, const double loc[3],
+               double &result, moab::EntityHandle* surface = 0);
+
+
   // Member variables
   private:
   moab::Interface* MBI;

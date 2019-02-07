@@ -107,3 +107,29 @@ void DblTriOccludedFunc(void* tris_i, RTCDRay& ray, size_t item) {
     ray.geomID = 0;
   }
 }
+
+double DblTriClosestFunc(const DblTri& tri, const double loc[3]) {
+
+
+  moab::Interface* mbi = (moab::Interface*) tri.moab_instance;
+  moab::ErrorCode rval;
+
+  std::vector<moab::EntityHandle> conn;
+  rval = mbi->get_connectivity(&(tri.handle), 1, conn);
+  MB_CHK_SET_ERR_CONT(rval, "Failed to get triangle connectivity");
+
+  Vec3da coords[3];
+  rval = mbi->get_coords(&conn[0], 1, &(coords[0][0]));
+  MB_CHK_SET_ERR_CONT(rval, "Failed to get vertext coordinates");
+  rval = mbi->get_coords(&conn[1], 1, &(coords[1][0]));
+  MB_CHK_SET_ERR_CONT(rval, "Failed to get vertext coordinates");
+  rval = mbi->get_coords(&conn[2], 1, &(coords[2][0]));
+  MB_CHK_SET_ERR_CONT(rval, "Failed to get vertext coordinates");
+
+  Vec3da location(loc);
+
+  Vec3da result;
+  closest_location_on_tri(location, coords, result);
+
+  return (result - location).length();
+}

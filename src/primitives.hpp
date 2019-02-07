@@ -60,4 +60,6 @@ void DblTriIntersectFunc(void* tris_i, RTCDRay& ray, size_t item);
 
 void DblTriOccludedFunc(void* tris_i, RTCDRay& ray, size_t item);
 
+double DblTriClosestFunc(const DblTri& tri, const double loc[3]);
+
 #endif
