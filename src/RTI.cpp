@@ -65,7 +65,6 @@ struct Node
 
     static void* create (RTCThreadLocalAllocator alloc, const RTCBuildPrimitive* prims, size_t numPrims, void* userPtr)
     {
-      std::cout << "Creating leaf node with " << numPrims << " primitives.\n";
       assert(numPrims == 1);
       void* ptr = rtcThreadLocalAlloc(alloc,sizeof(LeafNode),16);
       return (void*) new (ptr) LeafNode(prims->primID,*(AABB*)prims);
@@ -141,6 +140,20 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
     rval = MBI->get_child_meshsets(vol, surfs);
     MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces.");
 
+    int num_vol_tris = 0;
+    // allocate triangle buffer
+    for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
+      int num_surf_tris;
+      rval = MBI->get_number_entities_by_type(*j, moab::MBTRI, num_surf_tris);
+      MB_CHK_SET_ERR(rval, "Failed to get triangle count");
+      num_vol_tris += num_surf_tris;
+    }
+
+    DblTri* emtris = (DblTri*) malloc(num_vol_tris*sizeof(DblTri));
+
+    buffer_storage.store(vol, num_vol_tris, emtris);
+
+    int buffer_start = 0;
     for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
       moab::EntityHandle this_surf = *j;
       // find the surface sense
@@ -158,19 +171,19 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
       // create a new geometry for the volume's scene
       unsigned int emsurf = rtcNewUserGeometry(scene, num_tris);
 
-      DblTri* emtris = (DblTri*) malloc(num_tris*sizeof(DblTri));
+      DblTri* buff_ptr = emtris + buffer_start;
 
-      rtcSetUserData(scene, emsurf, emtris);
-
-      buffer_storage.store(vol, num_tris, emtris);
+      rtcSetUserData(scene, emsurf, buff_ptr);
 
       for (int k = 0; k < num_tris; k++) {
-        emtris[k].moab_instance = MBI;
-        emtris[k].handle = tris[k];
-        emtris[k].surf = this_surf;
-        emtris[k].geomID = emsurf;
-        emtris[k].sense = sense;
+        buff_ptr[k].moab_instance = MBI;
+        buff_ptr[k].handle = tris[k];
+        buff_ptr[k].surf = this_surf;
+        buff_ptr[k].geomID = emsurf;
+        buff_ptr[k].sense = sense;
       } // end tris loop
+
+      buffer_start += num_tris;
 
       rtcSetBoundsFunction(scene, emsurf, (RTCBoundsFunc)&DblTriBounds);
       rtcSetIntersectFunction(scene, emsurf, (RTCIntersectFunc)&MBDblTriIntersectFunc);
@@ -265,6 +278,7 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
 
   Vec3da closest;
   double current_result = inf;
+
   while (true) pop:
     {
       // stack is empty, we're done
@@ -303,8 +317,10 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
       DblTri this_prim = buffer.second[leaf->id];
 
       double tmp = DblTriClosestFunc(this_prim, loc);
-      std::cout << "TMP : " << tmp << std::endl;
-      double current_result = std::min(tmp, current_result);
+      if ( tmp < current_result ) {
+        current_result = tmp;
+        if (surface) *surface = this_prim.surf;
+      }
     }
 
   result = current_result;
