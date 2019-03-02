@@ -31,21 +31,21 @@ struct Node
 
     static void* create (RTCThreadLocalAllocator alloc, size_t numChildren, void* userPtr)
     {
-      assert(numChildren == 2);
+      //      assert(numChildren == 2);
       void* ptr = rtcThreadLocalAlloc(alloc,sizeof(InnerNode),16);
       return (void*) new (ptr) InnerNode;
     }
 
     static void  setChildren (void* nodePtr, void** childPtr, size_t numChildren, void* userPtr)
     {
-      assert(numChildren == 2);
+      //      assert(numChildren == 2);
       for (size_t i=0; i<2; i++)
         ((InnerNode*)nodePtr)->children[i] = (Node*) childPtr[i];
     }
 
     static void  setBounds (void* nodePtr, const RTCBounds** bounds, size_t numChildren, void* userPtr)
     {
-      assert(numChildren == 2);
+      //      assert(numChildren == 2);
       for (size_t i=0; i<2; i++)
         ((InnerNode*)nodePtr)->bounds[i] = *(const AABB*) bounds[i];
     }
@@ -65,9 +65,14 @@ struct Node
 
     static void* create (RTCThreadLocalAllocator alloc, const RTCBuildPrimitive* prims, size_t numPrims, void* userPtr)
     {
-      assert(numPrims == 1);
+      //      assert(numPrims == 1);
       void* ptr = rtcThreadLocalAlloc(alloc,sizeof(LeafNode),16);
-      return (void*) new (ptr) LeafNode(prims->primID,*(AABB*)prims);
+      if (numPrims == 0) {
+        return NULL;
+      }
+      else {
+        return (void*) new (ptr) LeafNode(prims->primID,*(AABB*)prims);
+      }
     }
   };
 
@@ -119,13 +124,13 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
 
   moab::Range vols;
   rval = get_vols(vols);
-  MB_CHK_SET_ERR(rval, "Failed to get MOAB volumes.");
+  MB_CHK_SET_ERR(rval, "Failed to get MOAB volumes");
 
   std::cout << "Found " << vols.size() << " volumes." << std::endl;
   // set the EH offset
   sceneOffset = *vols.begin();
 
-  moab::GeomTopoTool* GTT = new moab::GeomTopoTool(MBI);
+  GTT = new moab::GeomTopoTool(MBI);
   // create an Embree geometry instance for each surface
   for (moab::Range::iterator i = vols.begin(); i != vols.end(); i++) {
     moab::EntityHandle vol = *i;
@@ -138,7 +143,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
     // get volume surfaces
     moab::Range surfs;
     rval = MBI->get_child_meshsets(vol, surfs);
-    MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces.");
+    MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces");
 
     int num_vol_tris = 0;
     // allocate triangle buffer
@@ -164,7 +169,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
       // get all triangles on this surface
       moab::Range tris;
       rval = MBI->get_entities_by_type(this_surf, moab::MBTRI, tris);
-      MB_CHK_SET_ERR(rval, "Failed to get surface triangles.");
+      MB_CHK_SET_ERR(rval, "Failed to get surface triangles");
 
       int num_tris = tris.size();
 
@@ -196,8 +201,6 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
     buildBVH(vol);
 
   } // end volume loop
-
-  delete GTT;
 
   return moab::MB_SUCCESS;
 }
@@ -261,7 +264,8 @@ void RayTracingInterface::buildBVH(moab::EntityHandle vol) {
 }
 
 void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
-                                  double &result, moab::EntityHandle* surface) {
+                                  double &result, moab::EntityHandle* surface,
+                                  moab::EntityHandle* facet) {
 
 
   std::pair<int, DblTri*> buffer = buffer_storage.retrieve_buffer(vol);
@@ -313,6 +317,7 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
         }
 
       LeafNode* leaf = dynamic_cast<LeafNode*>(cur);
+      if(!leaf) { continue; }
       // at leaf
       DblTri this_prim = buffer.second[leaf->id];
 
@@ -320,6 +325,7 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
       if ( tmp < current_result ) {
         current_result = tmp;
         if (surface) *surface = this_prim.surf;
+        if (facet) *facet = this_prim.handle;
       }
     }
 
@@ -419,6 +425,88 @@ void RayTracingInterface::dag_point_in_volume(const moab::EntityHandle volume,
     else                                                            result = 0;
   }
 }
+
+
+void RayTracingInterface::boundary_case(moab::EntityHandle volume,
+                                        int& result,
+                                        double u,
+                                        double v,
+                                        double w,
+                                        moab::EntityHandle facet,
+                                        moab::EntityHandle surface) {
+
+  moab::EntityHandle rval;
+
+  if (u <= 1.0 && v <= 1.0 && w <= 1.0) {
+
+    Vec3da uvw(u, v, w);
+    Vec3da coords[3], normal(0.0);
+    std::vector<moab::EntityHandle> conn;
+    int sense_out;
+
+    rval = MBI->get_connectivity(&facet, 1, conn);
+    MB_CHK_SET_ERR_CONT(rval, "Failed to get facet connectivity");
+
+    rval = MBI->get_coords(&conn[0], 1, &(coords[0][0]));
+    MB_CHK_SET_ERR_CONT(rval, "Failed to get vertex coordinates");
+    rval = MBI->get_coords(&conn[1], 1, &(coords[1][0]));
+    MB_CHK_SET_ERR_CONT(rval, "Failed to get vertex coordinates");
+    rval = MBI->get_coords(&conn[2], 1, &(coords[2][0]));
+    MB_CHK_SET_ERR_CONT(rval, "Failed to get vertex coordinates");
+
+    rval = GTT->get_sense(surface, volume, sense_out);
+    MB_CHK_SET_ERR_CONT(rval, "Failed to get the surface sense");
+
+    coords[1] -= coords[0];
+    coords[2] -= coords[0];
+
+    normal = sense_out * cross(coords[1], coords[2]);
+
+    double sense = dot(uvw, normal);
+
+
+    if ( sense < 0.0 ) {
+      result = 1;     // inside or entering
+    } else  if ( sense > 0.0 ) {
+      result = 0;     // outside or leaving
+    } else  if ( sense == 0.0 ) {
+      result = -1;    // tangent, therefore on boundary
+    } else {
+      result = -1;    // failure
+      MB_SET_ERR_CONT(moab::MB_FAILURE);
+    }
+
+
+  } else {
+    result = -1;
+  }
+
+}
+
+void RayTracingInterface::test_volume_boundary(const moab::EntityHandle volume,
+                                               const moab::EntityHandle surface,
+                                               const double xyz[3], const double uvw[3], int& result,
+                                               const moab::GeomQueryTool::RayHistory* history) {
+
+  moab::ErrorCode rval;
+  int dir;
+
+  // if (history && history->prev_facets.size()) {
+  //   boundary_case(volume, dir, uvw[0], uvw[1], uvw[2], history->prev_facets.back(), surface);
+  // } else {
+    // find nearest facet
+    moab::EntityHandle surf, facet;
+    double dist;
+    closest(volume, xyz, dist, &surf, &facet);
+
+    boundary_case(volume, dir, uvw[0], uvw[1], uvw[2], facet, surface);
+    //  }
+
+  result = dir;
+}
+
+
+
 
 
 void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,

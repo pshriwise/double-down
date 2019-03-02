@@ -54,7 +54,7 @@ class RayTracingInterface {
 
   RayTracingInterface() : MBI(NULL) { }
 
-  ~RayTracingInterface() { buffer_storage.clear(); }
+  ~RayTracingInterface() { buffer_storage.clear(); delete GTT; }
 
   // Public Functions
   moab::ErrorCode init(std::string filename = "");
@@ -74,6 +74,22 @@ class RayTracingInterface {
                            moab::GeomQueryTool::RayHistory *history,
                            double overlap_tol = 0.0,
                            moab::EntityHandle = 0);
+
+  void boundary_case(moab::EntityHandle volume,
+                     int& result,
+                     double u,
+                     double v,
+                     double w,
+                     moab::EntityHandle facet,
+                     moab::EntityHandle surface);
+
+
+  void test_volume_boundary(const moab::EntityHandle volume,
+                                                 const moab::EntityHandle surface,
+                                                 const double xyz[3],
+                                                 const double uvw[3],
+                                                 int& result,
+                            const moab::GeomQueryTool::RayHistory* history = 0);
 
   void ray_fire(moab::EntityHandle volume, const double origin[3],
                 const double dir[3], RayFireType filt_func, double tnear,
@@ -96,12 +112,13 @@ class RayTracingInterface {
   void buildBVH(moab::EntityHandle vol);
 
   void closest(moab::EntityHandle vol, const double loc[3],
-               double &result, moab::EntityHandle* surface = 0);
+               double &result, moab::EntityHandle* surface = 0, moab::EntityHandle* facet = 0);
 
 
   // Member variables
   private:
   moab::Interface* MBI;
+  moab::GeomTopoTool *GTT;
   DblTriStorage buffer_storage;
   std::map<moab::EntityHandle, RTCScene> scene_map;
   std::map<moab::EntityHandle, std::vector<DblTri*>> tri_ref_storage;
