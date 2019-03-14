@@ -53,11 +53,12 @@ struct Node
 
   struct LeafNode : public Node
   {
-    unsigned id;
+    std::vector<unsigned> ids;
     AABB bounds;
 
-    LeafNode (unsigned id, const AABB& bounds)
-      : id(id), bounds(bounds) {}
+    LeafNode (std::vector<unsigned> ids, const AABB& bounds)
+      : ids(ids), bounds(bounds) {
+    }
 
     float sah() {
       return 1.0f;
@@ -71,7 +72,11 @@ struct Node
         return NULL;
       }
       else {
-        return (void*) new (ptr) LeafNode(prims->primID,*(AABB*)prims);
+        std::vector<unsigned> ids;
+        for (int i = 0; i < numPrims; i++) {
+          ids.emplace_back(prims[i].primID);
+        }
+        return (void*) new (ptr) LeafNode(std::move(ids),*(AABB*)prims);
       }
     }
   };
@@ -221,7 +226,7 @@ void RayTracingInterface::buildBVH(moab::EntityHandle vol) {
   settings.maxDepth = 1024;
   settings.sahBlockSize = 1;
   settings.minLeafSize = 1;
-  settings.maxLeafSize = 1;
+  settings.maxLeafSize = 20;
   settings.travCost = 1.0f;
   settings.intCost = 1.0f;
   settings.extraSpace = extraSpace;
@@ -319,13 +324,15 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
       LeafNode* leaf = dynamic_cast<LeafNode*>(cur);
       if(!leaf) { continue; }
       // at leaf
-      DblTri this_prim = buffer.second[leaf->id];
+      for (const auto& id : leaf->ids) {
+        DblTri this_prim = buffer.second[id];
 
-      double tmp = DblTriClosestFunc(this_prim, loc);
-      if ( tmp < current_result ) {
-        current_result = tmp;
-        if (surface) *surface = this_prim.surf;
-        if (facet) *facet = this_prim.handle;
+        double tmp = DblTriClosestFunc(this_prim, loc);
+        if ( tmp < current_result ) {
+          current_result = tmp;
+          if (surface) *surface = this_prim.surf;
+          if (facet) *facet = this_prim.handle;
+        }
       }
     }
 

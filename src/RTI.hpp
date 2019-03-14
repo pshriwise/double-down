@@ -10,13 +10,15 @@
 #include "primitives.hpp"
 #include "MOABRay.h"
 
+#include <unordered_map>
+
 class Node;
 
 class RayTracingInterface {
 
   class DblTriStorage {
   private:
-    std::map<moab::EntityHandle, std::pair<int, DblTri*>> storage_;
+    std::unordered_map<moab::EntityHandle, std::pair<int, DblTri*>> storage_;
 
   public:
     bool is_storing(moab::EntityHandle vol) {
@@ -120,11 +122,11 @@ class RayTracingInterface {
   moab::Interface* MBI;
   moab::GeomTopoTool *GTT;
   DblTriStorage buffer_storage;
-  std::map<moab::EntityHandle, RTCScene> scene_map;
-  std::map<moab::EntityHandle, std::vector<DblTri*>> tri_ref_storage;
+  std::unordered_map<moab::EntityHandle, RTCScene> scene_map;
+  std::unordered_map<moab::EntityHandle, std::vector<DblTri*>> tri_ref_storage;
   std::vector<RTCScene> scenes;
   moab::EntityHandle sceneOffset;
-  std::map<moab::EntityHandle, Node*> root_map;
+  std::unordered_map<moab::EntityHandle, Node*> root_map;
 };
 
 #endif
