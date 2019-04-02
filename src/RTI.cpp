@@ -114,7 +114,10 @@ public:
 
 typedef StackItemT<Node*> StackItem;
 
-moab::ErrorCode RayTracingInterface::init(std::string filename) {
+moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_enabled) {
+
+  closest_enabled_ = closest_enabled;
+
   moab::ErrorCode rval;
 
   if ("" == filename && NULL == MBI) {
@@ -203,7 +206,9 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
 
     rtcCommit(scene);
 
-    buildBVH(vol);
+    if (closest_enabled_) {
+      buildBVH(vol);
+    }
 
   } // end volume loop
 
