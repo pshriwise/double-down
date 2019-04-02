@@ -11,6 +11,7 @@
 #include "MOABRay.h"
 
 #include <unordered_map>
+#include <memory>
 
 class Node;
 
@@ -18,34 +19,31 @@ class RayTracingInterface {
 
   class DblTriStorage {
   private:
-    std::unordered_map<moab::EntityHandle, std::pair<int, DblTri*>> storage_;
+    std::unordered_map<moab::EntityHandle, std::pair<int, std::shared_ptr<DblTri>>> storage_;
 
   public:
     bool is_storing(moab::EntityHandle vol) {
       return storage_.count(vol);
     }
 
-    bool is_storing(DblTri* ptr) {
+    bool is_storing(std::shared_ptr<DblTri> ptr) {
       for (auto it : storage_) {
         if (it.second.second == ptr) return true;
       }
       return false;
     }
 
-    void store(moab::EntityHandle vol, int size, DblTri* ptr) {
+    void store(moab::EntityHandle vol, int size, std::shared_ptr<DblTri> ptr) {
       if (!is_storing(ptr)) {
         storage_[vol] = {size, ptr};
       }
     }
 
-    std::pair<int, DblTri*> retrieve_buffer(moab::EntityHandle vol) {
+    std::pair<int, std::shared_ptr<DblTri>> retrieve_buffer(moab::EntityHandle vol) {
       return storage_[vol];
     }
 
     void clear() {
-      for (auto it : storage_) {
-        free(it.second.second);
-      }
       storage_.clear();
     }
 
@@ -56,7 +54,7 @@ class RayTracingInterface {
 
   RayTracingInterface() : MBI(NULL) { }
 
-  ~RayTracingInterface() { buffer_storage.clear(); delete GTT; }
+  ~RayTracingInterface() { buffer_storage.clear(); }
 
   // Public Functions
   moab::ErrorCode init(std::string filename = "");
@@ -120,10 +118,10 @@ class RayTracingInterface {
   // Member variables
   private:
   moab::Interface* MBI;
-  moab::GeomTopoTool *GTT;
+  std::unique_ptr<moab::GeomTopoTool> GTT;
   DblTriStorage buffer_storage;
   std::unordered_map<moab::EntityHandle, RTCScene> scene_map;
-  std::unordered_map<moab::EntityHandle, std::vector<DblTri*>> tri_ref_storage;
+  std::unordered_map<moab::EntityHandle, std::vector<std::shared_ptr<DblTri>>> tri_ref_storage;
   std::vector<RTCScene> scenes;
   moab::EntityHandle sceneOffset;
   std::unordered_map<moab::EntityHandle, Node*> root_map;

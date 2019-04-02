@@ -135,7 +135,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
   // set the EH offset
   sceneOffset = *vols.begin();
 
-  GTT = new moab::GeomTopoTool(MBI);
+  GTT = std::unique_ptr<moab::GeomTopoTool>(new moab::GeomTopoTool(MBI));
   // create an Embree geometry instance for each surface
   for (moab::Range::iterator i = vols.begin(); i != vols.end(); i++) {
     moab::EntityHandle vol = *i;
@@ -159,7 +159,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
       num_vol_tris += num_surf_tris;
     }
 
-    DblTri* emtris = (DblTri*) malloc(num_vol_tris*sizeof(DblTri));
+    std::shared_ptr<DblTri> emtris((DblTri*) malloc(num_vol_tris*sizeof(DblTri)));
 
     buffer_storage.store(vol, num_vol_tris, emtris);
 
@@ -181,7 +181,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename) {
       // create a new geometry for the volume's scene
       unsigned int emsurf = rtcNewUserGeometry(scene, num_tris);
 
-      DblTri* buff_ptr = emtris + buffer_start;
+      DblTri* buff_ptr = emtris.get() + buffer_start;
 
       rtcSetUserData(scene, emsurf, buff_ptr);
 
@@ -231,13 +231,13 @@ void RayTracingInterface::buildBVH(moab::EntityHandle vol) {
   settings.intCost = 1.0f;
   settings.extraSpace = extraSpace;
 
-  std::pair<int, DblTri*> buffer = buffer_storage.retrieve_buffer(vol);
+  std::pair<int, std::shared_ptr<DblTri>> buffer = buffer_storage.retrieve_buffer(vol);
 
   std::vector<RTCBuildPrimitive> prims;
   prims.resize(buffer.first);
 
   for(int i = 0; i < buffer.first; i++) {
-    DblTri dtri = buffer.second[i];
+    DblTri dtri = buffer.second.get()[i];
 
     RTCBounds bounds = DblTriBounds((moab::Interface*)dtri.moab_instance,
                                     dtri.handle);
@@ -273,7 +273,7 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
                                   moab::EntityHandle* facet) {
 
 
-  std::pair<int, DblTri*> buffer = buffer_storage.retrieve_buffer(vol);
+  std::pair<int, std::shared_ptr<DblTri>> buffer = buffer_storage.retrieve_buffer(vol);
 
   size_t stackSize = 1024;
   StackItem stack[stackSize];
@@ -325,7 +325,7 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
       if(!leaf) { continue; }
       // at leaf
       for (const auto& id : leaf->ids) {
-        DblTri this_prim = buffer.second[id];
+        DblTri this_prim = buffer.second.get()[id];
 
         double tmp = DblTriClosestFunc(this_prim, loc);
         if ( tmp < current_result ) {
