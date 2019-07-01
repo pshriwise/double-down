@@ -71,3 +71,4 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/ddConfig.cmake.in" "${DD_CMAKE
 
 add_subdirectory(apps)
 add_subdirectory(test)
+add_subdirectory(test_files)
