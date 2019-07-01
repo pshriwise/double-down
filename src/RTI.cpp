@@ -1,4 +1,6 @@
 
+#include <string>
+
 // MOAB
 #include "MBTagConventions.hpp"
 #include "moab/GeomTopoTool.hpp"
@@ -6,6 +8,14 @@
 // Local
 #include "RTI.hpp"
 #include "AABB.h"
+
+void error(void* dum, RTCError code, const char* str) {
+  if (code != RTC_ERROR_NONE) {
+    std::cout << "Error occured" << std::endl;
+    std::string msg(str);
+    std::cout << msg << std::endl;
+  }
+}
 
 struct Node
 {
@@ -130,6 +140,8 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
 
   g_device = rtcNewDevice(NULL);
 
+  rtcSetDeviceErrorFunction(g_device, (RTCErrorFunction)error, NULL);
+
   moab::Range vols;
   rval = get_vols(vols);
   MB_CHK_SET_ERR(rval, "Failed to get MOAB volumes");
@@ -209,7 +221,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
       rtcSetGeometryIntersectFunction (geom_0, (RTCIntersectFunctionN)&MBDblTriIntersectFunc);
       rtcSetGeometryOccludedFunction (geom_0, (RTCOccludedFunctionN)&DblTriOccludedFunc);
 
-      // rtcReleaseGeometry(geom_0);;
+      rtcCommitGeometry(geom_0);
 
     } // end surface loop
 
