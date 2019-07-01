@@ -390,68 +390,64 @@ void RayTracingInterface::fire(moab::EntityHandle vol, RTCDRayHit &rayhit) {
 
 }
 
-// void RayTracingInterface::dag_point_in_volume(const moab::EntityHandle volume,
-//                                               const double xyz[3],
-//                                               int& result,
-//                                               const double *uvw,
-//                                               moab::GeomQueryTool::RayHistory *history,
-//                                               double overlap_tol,
-//                                               moab::EntityHandle imp_comp) {
-//   const double huge_val = std::numeric_limits<double>::max();
-//   double dist_limit = huge_val;
+void RayTracingInterface::dag_point_in_volume(const moab::EntityHandle volume,
+                                              const double xyz[3],
+                                              int& result,
+                                              const double *uvw,
+                                              moab::GeomQueryTool::RayHistory *history,
+                                              double overlap_tol,
+                                              moab::EntityHandle imp_comp) {
+  const double huge_val = std::numeric_limits<double>::max();
+  double dist_limit = huge_val;
 
-//   RTCScene scene = scene_map[volume];
+   RTCScene scene = scene_map[volume];
 
-//   double dir[3];
-//   if (uvw) {
-//     dir[0] = uvw[0];
-//     dir[1] = uvw[1];
-//     dir[2] = uvw[2];
-//   } else {
-//     dir[0] = 0.5;
-//     dir[1] = 0.5;
-//     dir[2] = 0.5;
-//   }
+  double dir[3];
+  if (uvw) {
+    dir[0] = uvw[0];
+    dir[1] = uvw[1];
+    dir[2] = uvw[2];
+  } else {
+    dir[0] = 0.5;
+    dir[1] = 0.5;
+    dir[2] = 0.5;
+  }
 
-//   MBRay mbray;
-//   mbray.set_org(xyz);
-//   mbray.set_dir(dir);
-//   mbray.rf_type = RayFireType::PIV;
-//   mbray.orientation = 1;
-//   mbray.mask = -1;
-//   mbray.tnear = 0.0;
-//   mbray.set_len(dist_limit);
+  MBRayHit mbrayhit;
 
+  MBRay& mbray = mbrayhit.ray;
+  mbray.set_org(xyz);
+  mbray.set_dir(dir);
+  mbray.rf_type = RayFireType::PIV;
+  mbray.orientation = 1;
+  mbray.mask = -1;
+  mbray.tnear = 0.0;
+  mbray.set_len(dist_limit);
+  if (history) { mbray.rh = history; }
 
-//   MBHit mbhit;
-//   mbhit.geomID = RTC_INVALID_GEOMETRY_ID;
-//   mbhit.primID = RTC_INVALID_GEOMETRY_ID;
-//   if (history) { mbray.rh = history; }
+  MBHit& mbhit = mbrayhit.hit;
+  mbhit.geomID = RTC_INVALID_GEOMETRY_ID;
+  mbhit.primID = RTC_INVALID_GEOMETRY_ID;
 
-//   MBRayHit mbrayhit;
-//   mbrayhit.ray = mbray;
-//   mbrayhit.hit = mbhit;
+  // fire ray
+  {
+   RTCIntersectContext context;
+    rtcInitIntersectContext(&context);
+    rtcIntersect1(scene,&context,(RTCRayHit*)&mbrayhit);
+    mbhit.Ng_x = -mbhit.Ng_x; // EMBREE_FIXME: only correct for triangles,quads, and subdivision surfaces
+    mbhit.Ng_y = -mbhit.Ng_y;
+    mbhit.Ng_z = -mbhit.Ng_z;
+  }
 
-//   // fire ray
-//   {
-//     RTCIntersectContext context;
-//     rtcInitIntersectContext(&context);
-//     rtcIntersect1(scene,&context,(RTCRayHit*)&mbrayhit);
-//     MBHit& hit_ref = mbrayhit.hit;
-//     hit_ref.Ng_x = -hit_ref.Ng_x; // EMBREE_FIXME: only correct for triangles,quads, and subdivision surfaces
-//     hit_ref.Ng_y = -hit_ref.Ng_y;
-//     hit_ref.Ng_z = -hit_ref.Ng_z;
-//   }
+  Vec3da ray_dir(dir);
+  Vec3da tri_norm(mbrayhit.hit.dNg[0], mbrayhit.hit.dNg[1], mbrayhit.hit.dNg[2]);
 
-//   Vec3da ray_dir(dir);
-//   Vec3da tri_norm(mbrayhit.hit.dNg[0], mbrayhit.hit.dNg[1], mbrayhit.hit.dNg[2]);
-
-//   if (mbrayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
-//     result = dot(ray_dir, tri_norm) > 0.0 ? 1 : 0;
-//   }
-//   else {
-//     result = 0;
-//   }
+  if (mbrayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
+    result = dot(ray_dir, tri_norm) > 0.0 ? 1 : 0;
+  }
+  else {
+    result = 0;
+  }
 
 //   if (overlap_tol != 0.0) {
 //     MBRayAccumulate aray;
@@ -494,7 +490,8 @@ void RayTracingInterface::fire(moab::EntityHandle vol, RTCDRayHit &rayhit) {
 //     else if (imp_comp && imp_comp == volume)                        result = 1;
 //     else                                                            result = 0;
 //   }
-// }
+
+}
 
 
 void RayTracingInterface::boundary_case(moab::EntityHandle volume,
@@ -592,45 +589,70 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
 
   RTCScene scene = scene_map[volume];
 
-  MBRay mbray;
+  MBRayHit rayhit;
+
+  MBRay& mbray  = rayhit.ray;
   mbray.set_org(point);
   mbray.set_dir(dir);
   mbray.tnear = 0.0;
   mbray.set_len(dist_limit);
-  mbray.geomID = RTC_INVALID_GEOMETRY_ID;
-  mbray.primID = RTC_INVALID_GEOMETRY_ID;
   mbray.rf_type = RayFireType::RF;
   mbray.orientation = ray_orientation;
   mbray.mask = -1;
   if (history) { mbray.rh = history; }
 
+
+  MBHit& mbhit = rayhit.hit;
+  mbhit.geomID = RTC_INVALID_GEOMETRY_ID;
+  mbhit.primID = RTC_INVALID_GEOMETRY_ID;
+
   // fire ray
-  rtcIntersect(scene, *((RTCRay*)&mbray));
+  {
+    RTCIntersectContext context;
+    rtcInitIntersectContext(&context);
+    rtcIntersect1(scene,&context,(RTCRayHit*)&rayhit);
+    mbhit.Ng_x = -mbhit.Ng_x;
+    mbhit.Ng_y = -mbhit.Ng_y;
+    mbhit.Ng_z = -mbhit.Ng_z;
+  }
+
   // check behind the ray origin for intersections
   double neg_ray_len = 1e-03;
 
-  MBRay neg_ray;
+  MBRayHit neg_rayhit;
+
+  MBRay& neg_ray = neg_rayhit.ray;
   neg_ray.set_org(point);
   neg_ray.set_dir(-mbray.ddir);
   neg_ray.tnear = 0.0;
-  neg_ray.geomID = -1;
-  neg_ray.primID = -1;
   neg_ray.rf_type = RayFireType::RF;
   neg_ray.orientation = ray_orientation;
   if (history) { neg_ray.rh = history; }
   neg_ray.set_len(neg_ray_len);
 
-  rtcIntersect(scene, *((RTCRay*)&neg_ray));
+  MBHit& neg_hit = neg_rayhit.hit;
+  neg_hit.geomID = RTC_INVALID_GEOMETRY_ID;
+  neg_hit.primID = RTC_INVALID_GEOMETRY_ID;
+
+  // fire ray in negative direction
+  {
+    RTCIntersectContext context;
+    rtcInitIntersectContext(&context);
+    rtcIntersect1(scene,&context,(RTCRayHit*)&neg_ray);
+    neg_hit.Ng_x = -neg_hit.Ng_x;
+    neg_hit.Ng_y = -neg_hit.Ng_y;
+    neg_hit.Ng_z = -neg_hit.Ng_z;
+  }
 
   bool use_neg_intersection = false;
   // If an RTI is found at negative distance, perform a PMT to see if the
   // particle is inside an overlap.
-  if(neg_ray.geomID != RTC_INVALID_GEOMETRY_ID) {
+  if(neg_hit.geomID != RTC_INVALID_GEOMETRY_ID) {
     moab::ErrorCode rval;
     // get the next volume
     std::vector<moab::EntityHandle> vols;
     moab::EntityHandle nx_vol;
-    rval = MBI->get_parent_meshsets( neg_ray.surf_handle, vols );
+    rval = MBI->get_parent_meshsets( neg_hit.surf_handle, vols );
     MB_CHK_SET_ERR_CONT(rval, "Failed to get the parent meshsets");
     if (2 != vols.size()) {
       MB_CHK_SET_ERR_CONT(moab::MB_FAILURE, "Invaid number of parent volumes found");
@@ -646,26 +668,27 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
     if (1==result) use_neg_intersection = true;
   }
 
-  if(use_neg_intersection && neg_ray.geomID != RTC_INVALID_GEOMETRY_ID) {
+  if(use_neg_intersection && neg_hit.geomID != RTC_INVALID_GEOMETRY_ID) {
     next_surf_dist = 0;
-    next_surf = neg_ray.surf_handle;
+    next_surf = neg_hit.surf_handle;
   }
-  else if ( mbray.geomID != RTC_INVALID_GEOMETRY_ID) {
+  else if ( mbhit.geomID != RTC_INVALID_GEOMETRY_ID) {
     next_surf_dist = mbray.dtfar;
-    next_surf = mbray.surf_handle;
+    next_surf = mbhit.surf_handle;
   }
   else {
     next_surf_dist = 1E37;
     next_surf = 0;
   }
 
+  next_surf = 0; next_surf_dist = huge_val;
 
   if(history) {
     if(use_neg_intersection) {
-      history->add_entity(neg_ray.prim_handle);
+      history->add_entity(neg_hit.prim_handle);
     }
     else {
-      history->add_entity(mbray.prim_handle);
+      history->add_entity(mbhit.prim_handle);
     }
   }
 

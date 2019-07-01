@@ -67,13 +67,14 @@ class RayTracingInterface {
 
   void add_triangles(moab::Interface* MBI, moab::EntityHandle vol, moab::Range triangles_eh, int sense);
 
-  // void dag_point_in_volume(const moab::EntityHandle volume,
-  //                          const double xyz[3],
-  //                          int& result,
-  //                          const double *uvw,
-  //                          moab::GeomQueryTool::RayHistory *history,
-  //                          double overlap_tol = 0.0,
-  //                          moab::EntityHandle = 0);
+  void dag_point_in_volume(const moab::EntityHandle volume,
+                           const double xyz[3],
+                           int& result,
+                           const double *uvw,
+                           moab::GeomQueryTool::RayHistory *history,
+                           double overlap_tol = 0.0,
+                           moab::EntityHandle = 0);
+
 
   void boundary_case(moab::EntityHandle volume,
                      int& result,
@@ -95,14 +96,14 @@ class RayTracingInterface {
                 const double dir[3], RayFireType filt_func, double tnear,
                 int &em_surf, double &dist_to_hit, float norm[3]);
 
-  // void dag_ray_fire(const moab::EntityHandle volume,
-  //                   const double point[3],
-  //                   const double dir[3],
-  //                   moab::EntityHandle& next_surf,
-  //                   double& next_surf_dist,
-  //                   moab::GeomQueryTool::RayHistory* history = NULL,
-  //                   double user_dist_limit = 0,
-  //                   int ray_orientation = 1);
+  void dag_ray_fire(const moab::EntityHandle volume,
+                    const double point[3],
+                    const double dir[3],
+                    moab::EntityHandle& next_surf,
+                    double& next_surf_dist,
+                    moab::GeomQueryTool::RayHistory* history = NULL,
+                    double user_dist_limit = 0,
+                    int ray_orientation = 1);
 
   bool point_in_vol(float coordinate[3], float dir[3]);
 
