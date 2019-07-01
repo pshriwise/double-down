@@ -73,11 +73,13 @@ void MBDblTriIntersectFunc(RTCIntersectFunctionNArguments* args) {
   MBHit& hit = rayhit->hit;
 
   MBRay orig_ray = ray;
+  MBHit orig_hit = hit;
   double orig_dist = ray.dtfar;
   DblTriIntersectFunc(args);
 
   if (hit.geomID == RTC_INVALID_GEOMETRY_ID) {
     ray = orig_ray;
+    hit = orig_hit;
     return;
   }
 
@@ -102,6 +104,7 @@ void MBDblTriIntersectFunc(RTCIntersectFunctionNArguments* args) {
 
  if (hit.geomID == RTC_INVALID_GEOMETRY_ID) {
    ray = orig_ray;
+   hit = orig_hit;
  }
 
 return;

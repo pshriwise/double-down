@@ -49,7 +49,9 @@ int main(int argc, char** argv) {
             << " randomly oriented rays from the origin..." << std::endl;
   for (int i = 0; i < num_rays; i++) {
     // setup ray
-    RTCDRay ray;
+    RTCDRayHit rayhit;
+
+    RTCDRay& ray = rayhit.ray;
     double org[3] = {0.0, 0.0, 0.0};
     ray.set_org(org);
     moab::CartVect dir;
@@ -61,13 +63,9 @@ int main(int argc, char** argv) {
     ray.mask = -1;
     ray.rf_type = RayFireType::RF;
 
-    RTCDHit hit;
+    RTCDHit& hit = rayhit.hit;
     hit.geomID = RTC_INVALID_GEOMETRY_ID;
     hit.primID = RTC_INVALID_GEOMETRY_ID;
-
-    RTCDRayHit rayhit;
-    rayhit.ray = ray;
-    rayhit.hit = hit;
 
     // fire ray
     mark = std::clock();
