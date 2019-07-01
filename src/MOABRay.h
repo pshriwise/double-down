@@ -8,24 +8,43 @@
 // local
 #include "ray.h"
 
+struct MBHit : RTCDHit {
+  inline MBHit() {
+    geomID = RTC_INVALID_GEOMETRY_ID;
+    primID = RTC_INVALID_GEOMETRY_ID;
+    surf_handle = 0;
+    prim_handle = 0;
+  }
+
+  // MOAB/DAGMC-specific information
+  moab::EntityHandle surf_handle, prim_handle;
+};
+
 struct MBRay : RTCDRay {
   inline MBRay() {
     tnear = 0.0;
     tfar  = 1.E37;
     mask  = -1;
-    geomID = RTC_INVALID_GEOMETRY_ID;
-    primID = RTC_INVALID_GEOMETRY_ID;
-    surf_handle = 0;
-    prim_handle = 0;
-    rh = NULL;
     orientation = 0;
+    rh = NULL;
+    /* geomID = RTC_INVALID_GEOMETRY_ID; */
+    /* primID = RTC_INVALID_GEOMETRY_ID; */
+    /* surf_handle = 0; */
+    /* prim_handle = 0; */
+
+  }
+  int orientation;
+  moab::GeomQueryTool::RayHistory* rh;
+};
+
+struct MBRayHit {
+  struct MBRay ray;
+  struct MBHit hit;
+
+  double dot_prod() {
+    return dot(ray.ddir, hit.dNg);
   }
 
-  moab::EntityHandle surf_handle, prim_handle;
-  
-  moab::GeomQueryTool::RayHistory* rh;
-
-  int orientation;
 };
 
 struct MBRayAccumulate : MBRay {
@@ -33,8 +52,6 @@ struct MBRayAccumulate : MBRay {
     tnear = 0.0;
     tfar  = 1.E37;
     mask  = -1;
-    geomID = RTC_INVALID_GEOMETRY_ID;
-    primID = RTC_INVALID_GEOMETRY_ID;
     sum = 0;
     num_hit = 0;
   }
@@ -42,16 +59,26 @@ struct MBRayAccumulate : MBRay {
   int sum, num_hit;
 };
 
+struct MBRayHitAccumulate {
+  struct MBRayAccumulate ray;
+  struct MBHit hit;
+
+  double dot_prod() {
+    return dot(ray.ddir, hit.dNg);
+  }
+};
+
+
 double dot_prod(RTCDRay ray);
 
 bool in_facets(MBRay ray, moab::EntityHandle tri);
 
-void backface_cull(MBRay &ray, void* = NULL);
+void backface_cull(MBRayHit &rayhit, void* = NULL);
 
-void frontface_cull(MBRay &ray, void* = NULL);
+void frontface_cull(MBRayHit &rayhit, void* = NULL);
 
 void count_hits(MBRayAccumulate* ray);
 
-void MBDblTriIntersectFunc(void* tris_i, MBRay& ray, size_t item);
+void MBDblTriIntersectFunc(RTCIntersectFunctionNArguments* args);
 
 #endif

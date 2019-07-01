@@ -2,7 +2,7 @@
 #ifndef DD_PRIMITIVES_H
 #define DD_PRIMITIVES_H
 
-#include "embree2/rtcore.h"
+#include "embree3/rtcore.h"
 #include "moab/Core.hpp"
 #include "moab/CartVect.hpp"
 
@@ -54,11 +54,12 @@ inline RTCBounds DblTriBounds(const moab::Interface *mbi, moab::EntityHandle tri
 
 }
 
-void DblTriBounds(void* tris_i, size_t item, RTCBounds& bounds_o);
 
-void DblTriIntersectFunc(void* tris_i, RTCDRay& ray, size_t item);
+void DblTriBounds(const RTCBoundsFunctionArguments* args);
 
-void DblTriOccludedFunc(void* tris_i, RTCDRay& ray, size_t item);
+void DblTriIntersectFunc(RTCIntersectFunctionNArguments* args);
+
+void DblTriOccludedFunc(RTCOccludedFunctionNArguments* args);
 
 double DblTriClosestFunc(const DblTri& tri, const double loc[3]);
 

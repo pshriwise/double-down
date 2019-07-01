@@ -29,21 +29,21 @@ struct Node
       return 1.0f + (area(bounds[0])*children[0]->sah() + area(bounds[1])*children[1]->sah())/area(merge(bounds[0],bounds[1]));
     }
 
-    static void* create (RTCThreadLocalAllocator alloc, size_t numChildren, void* userPtr)
+    static void* create  (RTCThreadLocalAllocator alloc, unsigned int numChildren, void * userPtr)
     {
       //      assert(numChildren == 2);
       void* ptr = rtcThreadLocalAlloc(alloc,sizeof(InnerNode),16);
       return (void*) new (ptr) InnerNode;
     }
 
-    static void  setChildren (void* nodePtr, void** childPtr, size_t numChildren, void* userPtr)
+    static void  setChildren  (void* nodePtr, void** childPtr, unsigned int numChildren, void * userPtr)
     {
       //      assert(numChildren == 2);
       for (size_t i=0; i<2; i++)
         ((InnerNode*)nodePtr)->children[i] = (Node*) childPtr[i];
     }
 
-    static void  setBounds (void* nodePtr, const RTCBounds** bounds, size_t numChildren, void* userPtr)
+    static void  setBounds  (void* nodePtr, const RTCBounds** bounds, unsigned int numChildren, void* userPtr)
     {
       //      assert(numChildren == 2);
       for (size_t i=0; i<2; i++)
@@ -128,7 +128,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
     MB_CHK_SET_ERR(rval, "Failed to load the specified MOAB file");
   }
 
-  rtcInit();
+  g_device = rtcNewDevice(NULL);
 
   moab::Range vols;
   rval = get_vols(vols);
@@ -144,7 +144,10 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
     moab::EntityHandle vol = *i;
 
     // add to scenes vec
-    RTCScene scene = rtcNewScene(RTC_SCENE_ROBUST , RTC_INTERSECT1);
+    RTCScene scene = rtcNewScene(g_device);
+    rtcSetSceneFlags(scene,RTC_SCENE_FLAG_ROBUST ); // EMBREE_FIXME: set proper scene flags
+    rtcSetSceneBuildQuality(scene,RTC_BUILD_QUALITY_HIGH); // EMBREE_FIXME: set proper build quality
+
     scenes.push_back(scene);
     scene_map[vol] = scene;
 
@@ -182,11 +185,15 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
       int num_tris = tris.size();
 
       // create a new geometry for the volume's scene
-      unsigned int emsurf = rtcNewUserGeometry(scene, num_tris);
+      RTCGeometry geom_0 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_USER); // EMBREE_FIXME: check if geometry gets properly committed
+      rtcSetGeometryBuildQuality(geom_0,RTC_BUILD_QUALITY_HIGH);
+      rtcSetGeometryUserPrimitiveCount(geom_0,num_tris);
+      rtcSetGeometryTimeStepCount(geom_0,1);
+      unsigned int emsurf = rtcAttachGeometry(scene,geom_0);
 
       DblTri* buff_ptr = emtris.get() + buffer_start;
 
-      rtcSetUserData(scene, emsurf, buff_ptr);
+      rtcSetGeometryUserData(geom_0,buff_ptr);
 
       for (int k = 0; k < num_tris; k++) {
         buff_ptr[k].moab_instance = MBI;
@@ -198,13 +205,15 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
 
       buffer_start += num_tris;
 
-      rtcSetBoundsFunction(scene, emsurf, (RTCBoundsFunc)&DblTriBounds);
-      rtcSetIntersectFunction(scene, emsurf, (RTCIntersectFunc)&MBDblTriIntersectFunc);
-      rtcSetOccludedFunction(scene, emsurf, (RTCOccludedFunc)&DblTriOccludedFunc);
+      rtcSetGeometryBoundsFunction(geom_0,(RTCBoundsFunction)&DblTriBounds, NULL);
+      rtcSetGeometryIntersectFunction (geom_0, (RTCIntersectFunctionN)&MBDblTriIntersectFunc);
+      rtcSetGeometryOccludedFunction (geom_0, (RTCOccludedFunctionN)&DblTriOccludedFunc);
+
+      // rtcReleaseGeometry(geom_0);;
 
     } // end surface loop
 
-    rtcCommit(scene);
+    rtcCommitScene(scene);
 
     if (closest_enabled_) {
       buildBVH(vol);
@@ -217,23 +226,22 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
 
 void RayTracingInterface::buildBVH(moab::EntityHandle vol) {
 
-  RTCDevice device = rtcNewDevice();
+  RTCDevice device = rtcNewDevice (NULL);
 
   RTCBVH bvh = rtcNewBVH(device);
 
   /* settings for BVH build */
   const size_t extraSpace = 1000000;
-  RTCBuildSettings settings;
-  settings.size = sizeof(settings);
-  settings.quality = RTC_BUILD_QUALITY_HIGH;
+  RTCBuildArguments settings;
+  settings.byteSize = sizeof(settings);
+  settings.buildQuality = RTC_BUILD_QUALITY_HIGH;
   settings.maxBranchingFactor = 2;
   settings.maxDepth = 1024;
   settings.sahBlockSize = 1;
   settings.minLeafSize = 1;
   settings.maxLeafSize = 20;
-  settings.travCost = 1.0f;
-  settings.intCost = 1.0f;
-  settings.extraSpace = extraSpace;
+  settings.traversalCost = 1.0f;
+  settings.intersectionCost = 1.0f;
 
   std::pair<int, std::shared_ptr<DblTri>> buffer = buffer_storage.retrieve_buffer(vol);
 
@@ -257,17 +265,21 @@ void RayTracingInterface::buildBVH(moab::EntityHandle vol) {
     prims[i] = prim;
   }
 
-  Node* root = (Node*) rtcBuildBVH(bvh,
-                                   settings,
-                                   prims.data(),
-                                   prims.size(),
-                                   InnerNode::create,
-                                   InnerNode::setChildren,
-                                   InnerNode::setBounds,
-                                   LeafNode::create,
-                                   NULL,
-                                   NULL,
-                                   NULL);
+  settings.bvh = bvh;
+  settings.primitives = prims.data();
+  settings.primitiveCount = prims.size();
+  settings.createNode = InnerNode::create;
+  settings.setNodeChildren = InnerNode::setChildren;
+  settings.setNodeBounds = InnerNode::setBounds;
+  settings.createLeaf = LeafNode::create;
+  settings.splitPrimitive = NULL;
+  settings.buildProgress = NULL;
+  settings.userPtr = NULL;
+  settings.primitiveArrayCapacity = prims.capacity() * sizeof(RTCBuildPrimitive);
+  // EMBREE_FIXME: calculate capacity properly = extraSpace;
+
+  Node * root = (Node*) rtcBuildBVH(&settings);
+
   root_map[vol] = root;
 
 }
@@ -346,96 +358,131 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
 }
 
 void RayTracingInterface::shutdown() {
-  for(auto s : scenes) { rtcDeleteScene(s); }
+  for(auto s : scenes) { rtcReleaseScene(s); }
 
   if(MBI) { delete MBI; }
 
-  rtcExit();
+  rtcReleaseDevice (g_device);
 }
 
-void RayTracingInterface::fire(moab::EntityHandle vol, RTCDRay &ray) {
+void RayTracingInterface::fire(moab::EntityHandle vol, RTCDRayHit &rayhit) {
 
-  rtcIntersect(scenes[vol-sceneOffset], *((RTCRay*)&ray));
+  {
+    RTCIntersectContext context;
+    rtcInitIntersectContext(&context);
+    rtcIntersect1(scenes[vol-sceneOffset],&context,(RTCRayHit*)&rayhit);
+    rayhit.hit.Ng_x = -rayhit.hit.Ng_x; // EMBREE_FIXME: only correct for triangles,quads, and subdivision surfaces
+    rayhit.hit.Ng_y = -rayhit.hit.Ng_y;
+    rayhit.hit.Ng_z = -rayhit.hit.Ng_z;
+  }
 
 }
 
-void RayTracingInterface::dag_point_in_volume(const moab::EntityHandle volume,
-                                              const double xyz[3],
-                                              int& result,
-                                              const double *uvw,
-                                              moab::GeomQueryTool::RayHistory *history,
-                                              double overlap_tol,
-                                              moab::EntityHandle imp_comp) {
-  const double huge_val = std::numeric_limits<double>::max();
-  double dist_limit = huge_val;
+// void RayTracingInterface::dag_point_in_volume(const moab::EntityHandle volume,
+//                                               const double xyz[3],
+//                                               int& result,
+//                                               const double *uvw,
+//                                               moab::GeomQueryTool::RayHistory *history,
+//                                               double overlap_tol,
+//                                               moab::EntityHandle imp_comp) {
+//   const double huge_val = std::numeric_limits<double>::max();
+//   double dist_limit = huge_val;
 
-  RTCScene scene = scene_map[volume];
+//   RTCScene scene = scene_map[volume];
 
-  double dir[3];
-  if (uvw) {
-    dir[0] = uvw[0];
-    dir[1] = uvw[1];
-    dir[2] = uvw[2];
-  } else {
-    dir[0] = 0.5;
-    dir[1] = 0.5;
-    dir[2] = 0.5;
-  }
+//   double dir[3];
+//   if (uvw) {
+//     dir[0] = uvw[0];
+//     dir[1] = uvw[1];
+//     dir[2] = uvw[2];
+//   } else {
+//     dir[0] = 0.5;
+//     dir[1] = 0.5;
+//     dir[2] = 0.5;
+//   }
 
-  MBRay mbray;
-  mbray.set_org(xyz);
-  mbray.set_dir(dir);
+//   MBRay mbray;
+//   mbray.set_org(xyz);
+//   mbray.set_dir(dir);
+//   mbray.rf_type = RayFireType::PIV;
+//   mbray.orientation = 1;
+//   mbray.mask = -1;
+//   mbray.tnear = 0.0;
+//   mbray.set_len(dist_limit);
 
-  mbray.tnear = 0.0;
-  mbray.set_len(dist_limit);
-  mbray.geomID = RTC_INVALID_GEOMETRY_ID;
-  mbray.primID = RTC_INVALID_GEOMETRY_ID;
-  mbray.rf_type = RayFireType::PIV;
-  mbray.orientation = 1;
-  mbray.mask = -1;
-  if (history) { mbray.rh = history; }
 
-  // fire ray
-  rtcIntersect(scene, *((RTCRay*)&mbray));
+//   MBHit mbhit;
+//   mbhit.geomID = RTC_INVALID_GEOMETRY_ID;
+//   mbhit.primID = RTC_INVALID_GEOMETRY_ID;
+//   if (history) { mbray.rh = history; }
 
-  Vec3da ray_dir(dir);
-  Vec3da tri_norm(mbray.dNg[0], mbray.dNg[1], mbray.dNg[2]);
+//   MBRayHit mbrayhit;
+//   mbrayhit.ray = mbray;
+//   mbrayhit.hit = mbhit;
 
-  if (mbray.geomID != RTC_INVALID_GEOMETRY_ID) {
-    result = dot(ray_dir, tri_norm) > 0.0 ? 1 : 0;
-  }
-  else {
-    result = 0;
-  }
+//   // fire ray
+//   {
+//     RTCIntersectContext context;
+//     rtcInitIntersectContext(&context);
+//     rtcIntersect1(scene,&context,(RTCRayHit*)&mbrayhit);
+//     MBHit& hit_ref = mbrayhit.hit;
+//     hit_ref.Ng_x = -hit_ref.Ng_x; // EMBREE_FIXME: only correct for triangles,quads, and subdivision surfaces
+//     hit_ref.Ng_y = -hit_ref.Ng_y;
+//     hit_ref.Ng_z = -hit_ref.Ng_z;
+//   }
 
-  if (overlap_tol != 0.0) {
-    MBRayAccumulate aray;
-    aray.set_org(xyz);
-    aray.set_dir(dir);
-    aray.instID = volume;
-    aray.set_len(dist_limit);
-    aray.rf_type = RayFireType::ACCUM;
-    aray.sum = 0;
-    aray.num_hit = 0;
+//   Vec3da ray_dir(dir);
+//   Vec3da tri_norm(mbrayhit.hit.dNg[0], mbrayhit.hit.dNg[1], mbrayhit.hit.dNg[2]);
 
-    rtcIntersect(scene, *((RTCRay*)&aray));
-    if (aray.num_hit == 0) { result = 0; return; }
-    int hits = aray.num_hit;
+//   if (mbrayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
+//     result = dot(ray_dir, tri_norm) > 0.0 ? 1 : 0;
+//   }
+//   else {
+//     result = 0;
+//   }
 
-    aray.geomID = -1;
-    aray.primID = -1;
-    aray.set_len(dist_limit);
-    aray.tnear = 0.0;
-    aray.set_dir(aray.ddir*-1);
-    rtcIntersect(scene, *((RTCRay*)&aray));
-    if (aray.num_hit == hits) { result = 0; return; }
-    // inside/outside depends on the sum
-    if      (0 < aray.sum)                                          result = 0; // pt is outside (for all vols)
-    else if (0 > aray.sum)                                          result = 1; // pt is inside  (for all vols)
-    else if (imp_comp && imp_comp == volume)                        result = 1;
-    else                                                            result = 0;
-  }
-}
+//   if (overlap_tol != 0.0) {
+//     MBRayAccumulate aray;
+//     aray.set_org(xyz);
+//     aray.set_dir(dir);
+//     aray.instID = volume;
+//     aray.set_len(dist_limit);
+//     aray.rf_type = RayFireType::ACCUM;
+//     aray.sum = 0;
+//     aray.num_hit = 0;
+
+//     {
+//       RTCIntersectContext context;
+//       rtcInitIntersectContext(&context);
+//       rtcIntersect1(scene,&context,&*((RTCRay*)&aray));
+//       *((RTCRay*)&aray).hit.Ng_x = -*((RTCRay*)&aray).hit.Ng_x; // EMBREE_FIXME: only correct for triangles,quads, and subdivision surfaces
+//       *((RTCRay*)&aray).hit.Ng_y = -*((RTCRay*)&aray).hit.Ng_y;
+//       *((RTCRay*)&aray).hit.Ng_z = -*((RTCRay*)&aray).hit.Ng_z;
+//     }
+//     if (aray.num_hit == 0) { result = 0; return; }
+//     int hits = aray.num_hit;
+
+//     aray.geomID = -1;
+//     aray.primID = -1;
+//     aray.set_len(dist_limit);
+//     aray.tnear = 0.0;
+//     aray.set_dir(aray.ddir*-1);
+//     {
+//       RTCIntersectContext context;
+//       rtcInitIntersectContext(&context);
+//       rtcIntersect1(scene,&context,&*((RTCRay*)&aray));
+//       *((RTCRay*)&aray).hit.Ng_x = -*((RTCRay*)&aray).hit.Ng_x; // EMBREE_FIXME: only correct for triangles,quads, and subdivision surfaces
+//       *((RTCRay*)&aray).hit.Ng_y = -*((RTCRay*)&aray).hit.Ng_y;
+//       *((RTCRay*)&aray).hit.Ng_z = -*((RTCRay*)&aray).hit.Ng_z;
+//     }
+//     if (aray.num_hit == hits) { result = 0; return; }
+//     // inside/outside depends on the sum
+//     if      (0 < aray.sum)                                          result = 0; // pt is outside (for all vols)
+//     else if (0 > aray.sum)                                          result = 1; // pt is inside  (for all vols)
+//     else if (imp_comp && imp_comp == volume)                        result = 1;
+//     else                                                            result = 0;
+//   }
+// }
 
 
 void RayTracingInterface::boundary_case(moab::EntityHandle volume,
@@ -515,10 +562,6 @@ void RayTracingInterface::test_volume_boundary(const moab::EntityHandle volume,
 
   result = dir;
 }
-
-
-
-
 
 void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
                                        const double point[3],

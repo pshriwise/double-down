@@ -1,13 +1,13 @@
 
 #include "primitives.hpp"
 
-void intersectionFilter(void* ptr, RTCDRay &ray)
+void intersectionFilter(void* ptr, RTCDRayHit &rayhit)
 {
-  switch(ray.rf_type)
+  switch(rayhit.ray.rf_type)
     {
     case 0: //if this is a typical ray_fire, check the dot_product
-      if ( 0 > ray.dot_prod() )
-	ray.geomID = RTC_INVALID_GEOMETRY_ID;
+      if ( 0 > rayhit.dot_prod() )
+	rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
       break;
     case 1: //if this is a point_in_vol fire, do nothing
       break;
@@ -15,7 +15,11 @@ void intersectionFilter(void* ptr, RTCDRay &ray)
 }
 
 
-void DblTriBounds(void* tris_i, size_t item, RTCBounds& bounds_o) {
+void DblTriBounds(const RTCBoundsFunctionArguments* args)
+{
+  void* tris_i = args->geometryUserPtr;
+  size_t item = args->primID;
+  RTCBounds& bounds_o = *args->bounds_o;
 
   const DblTri* tris = (const DblTri*) tris_i;
   const DblTri& this_tri = tris[item];
@@ -27,7 +31,13 @@ void DblTriBounds(void* tris_i, size_t item, RTCBounds& bounds_o) {
   return;
 }
 
-void DblTriIntersectFunc(void* tris_i, RTCDRay& ray, size_t item) {
+void DblTriIntersectFunc(RTCIntersectFunctionNArguments* args) {
+
+  void* tris_i = args->geometryUserPtr;
+  size_t item = args->primID;
+  RTCDRayHit* rayhit = (RTCDRayHit*)args->rayhit;
+  RTCDRay& ray = rayhit->ray;
+  RTCDHit& hit = rayhit->hit;
 
   const DblTri* tris = (const DblTri*) tris_i;
   const DblTri& this_tri = tris[item];
@@ -53,9 +63,9 @@ void DblTriIntersectFunc(void* tris_i, RTCDRay& ray, size_t item) {
   Vec3da ray_org(ray.dorg);
   Vec3da ray_dir(ray.ddir);
 
-  bool hit = plucker_ray_tri_intersect(coords, ray_org, ray_dir, dist, ptr);
+  bool hit_tri = plucker_ray_tri_intersect(coords, ray_org, ray_dir, dist, ptr);
 
-  if ( hit ) {
+  if ( hit_tri ) {
     if (ray.geomID != -1 && dist > ray.dtfar) {
       ray.geomID = -1;
       return;
@@ -63,30 +73,33 @@ void DblTriIntersectFunc(void* tris_i, RTCDRay& ray, size_t item) {
 
     ray.dtfar = dist;
     ray.tfar = dist;
-    ray.u = 0.0f;
-    ray.v = 0.0f;
-    ray.geomID = this_tri.geomID;
-    ray.primID = (unsigned int) item;
+    hit.u = 0.0f;
+    hit.v = 0.0f;
+    hit.geomID = this_tri.geomID;
+    hit.primID = (unsigned int) item;
 
     Vec3da normal = cross((coords[1] - coords[0]),(coords[2] - coords[0]));
 
     if( -1 == this_tri.sense ) normal *= -1;
 
-    ray.dNg[0] = normal[0];
-    ray.dNg[1] = normal[1];
-    ray.dNg[2] = normal[2];
+    hit.dNg[0] = normal[0];
+    hit.dNg[1] = normal[1];
+    hit.dNg[2] = normal[2];
   } else {
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    hit.geomID = RTC_INVALID_GEOMETRY_ID;
   }
 
   return;
 }
 
-void DblTriOccludedFunc(void* tris_i, RTCDRay& ray, size_t item) {
+void DblTriOccludedFunc(RTCOccludedFunctionNArguments* args) {
+
+  void* tris_i = args->geometryUserPtr;
+  size_t item = args->primID;
+  RTCDRay* ray = (RTCDRay*)&(args->ray);
 
   const DblTri* tris = (const DblTri*) tris_i;
   const DblTri& this_tri = tris[item];
-  RTCBounds bounds;
 
   moab::Interface* mbi = (moab::Interface*) this_tri.moab_instance;
   moab::ErrorCode rval;
@@ -102,12 +115,12 @@ void DblTriOccludedFunc(void* tris_i, RTCDRay& ray, size_t item) {
   double dist;
   double nonneg_ray_len = 1e37;
   double* ptr = &nonneg_ray_len;
-  Vec3da ray_org(ray.dorg);
-  Vec3da ray_dir(ray.ddir);
+  Vec3da ray_org(ray->dorg);
+  Vec3da ray_dir(ray->ddir);
 
-  bool hit = plucker_ray_tri_intersect(coords, ray_org, ray_dir, dist, ptr);
-  if ( hit ) {
-    ray.geomID = 0;
+  bool hit_tri = plucker_ray_tri_intersect(coords, ray_org, ray_dir, dist, ptr);
+  if ( hit_tri ) {
+    ray->set_len(neg_inf);
   }
 }
 

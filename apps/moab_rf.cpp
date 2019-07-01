@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
 #ifdef __AVX2__
   std::cout << "AVX2 Enabled" << std::endl;
 #endif
-  
+
   RayTracingInterface* RTI = new RayTracingInterface();
 
   moab::ErrorCode rval;
@@ -58,18 +58,27 @@ int main(int argc, char** argv) {
     ray.set_dir(dir.array());
     double len = 1000;
     ray.set_len(len);
-    ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    ray.primID = RTC_INVALID_GEOMETRY_ID;
     ray.mask = -1;
     ray.rf_type = RayFireType::RF;
-    
+
+    RTCDHit hit;
+    hit.geomID = RTC_INVALID_GEOMETRY_ID;
+    hit.primID = RTC_INVALID_GEOMETRY_ID;
+
+    RTCDRayHit rayhit;
+    rayhit.ray = ray;
+    rayhit.hit = hit;
+
     // fire ray
     mark = std::clock();
-    RTI->fire(vols.front(), ray);
+    RTI->fire(vols.front(), rayhit);
     total += std::clock() - mark;
 
+    std::cout << rayhit.ray.dtfar << std::endl;
+    std::cout << rayhit.hit.geomID << std::endl;
+
     // make sure we hit something
-    if (ray.geomID == -1) {
+    if (rayhit.hit.geomID == -1) {
       std::cout << "Miss!" << std::endl;
       exit(1);
     }

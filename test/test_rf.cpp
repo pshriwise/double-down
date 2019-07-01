@@ -27,17 +27,24 @@ int main() {
 
   moab::EntityHandle sphere_vol = vols[0];
 
-  // fire a test ray
-  double org[3] = {0.0, 0.0, 0.0};
-  double dir[3] = {1.0, 0.0, 0.0};
+  double dtfar = 100000.0;
 
-  double dist = 0.0;
-  moab::EntityHandle surf;
+  // MBRay ray;
+  // ray.set_org({0.0, 0.0, 0.0});
+  // ray.set_dir({1.0, 0.0, 0.0});
+  // ray.tnear = 0.0;
+  // ray.set_len(dtfar);
 
-  RTI->dag_ray_fire(sphere_vol, org, dir, surf, dist);
+  // MBHit hit;
 
-  if (dist == 0.0) { return 1; }
-  if (surf == 0) { return 1; }
+  // MBRayHit ray_hit;
+  // ray_hit.ray = ray;
+  // ray_hit.hit = hit;
+
+  // RTI->fire(sphere_vol, ray_hit);
+
+  // if (ray_hit.ray.dtfar == dtfar)  { return 1; }
+  // if (ray_hit.hit.surf_handle == 0) { return 1; }
 
   return 0;
 }
