@@ -9,12 +9,14 @@
 #  EMBREE_LIBRARIES - Link these to use MOAB
 #  EMBREE_DEFINITIONS - Compiler switches required for using MOAB
 
-message(STATUS "Searching for embree...")
+set(EMBREE_VERSION ${embree_FIND_VERSION_MAJOR}.${embree_FIND_VERSION_MINOR}.${embree_FIND_VERSION_PATCH})
+
+message(STATUS "Searching for embree ${EMBREE_VERSION}...")
 
 find_path(EMBREE_CMAKE_CONFIG NAMES embree-config.cmake
           HINTS ${EMBREE_ROOT}
           PATHS ENV LD_LIBRARY_PATH
-          PATH_SUFFIXES lib Lib cmake cmake/embree-2.16.3
+          PATH_SUFFIXES lib Lib cmake cmake/embree-${EMBREE_VERSION}
           NO_DEFAULT_PATH)
 message(STATUS "Found EMBREE in ${EMBREE_CMAKE_CONFIG}")
 
