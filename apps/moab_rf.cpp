@@ -72,10 +72,7 @@ int main(int argc, char** argv) {
     RTI->fire(vols.front(), rayhit);
     total += std::clock() - mark;
 
-    std::cout << rayhit.ray.dtfar << std::endl;
-    std::cout << rayhit.hit.geomID << std::endl;
-
-    // make sure we hit something
+   // make sure we hit something
     if (rayhit.hit.geomID == -1) {
       std::cout << "Miss!" << std::endl;
       exit(1);
