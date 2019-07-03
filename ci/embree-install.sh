@@ -2,8 +2,8 @@
 set -ex
 
 # Embree Variables
-EMBREE_TAG='emdag_working'
-EMBREE_REPO='https://github.com/pshriwise/embree'
+EMBREE_TAG='v3.5.1'
+EMBREE_REPO='https://github.com/embree/embree'
 EMBREE_INSTALL_DIR=$HOME/EMBREE/
 
 CURRENT_DIR=$(pwd)
@@ -18,4 +18,3 @@ cmake ../embree -DCMAKE_INSTALL_PREFIX=$EMBREE_INSTALL_DIR \
       -DEMBREE_TBB_ROOT=/usr
 make -j2 && make -j2 install
 rm -rf $HOME/EMBREE/embree
-
