@@ -25,4 +25,4 @@ install:
   - ./ci/embree-install.sh
 script:
   - ./ci/travis-run.sh
-
+  - ./ci/dagmc-install.sh
