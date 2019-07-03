@@ -124,7 +124,8 @@ public:
 
 typedef StackItemT<Node*> StackItem;
 
-moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_enabled) {
+moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_enabled)
+{
 
   closest_enabled_ = closest_enabled;
 
@@ -287,7 +288,7 @@ void RayTracingInterface::buildBVH(moab::EntityHandle vol) {
   settings.splitPrimitive = NULL;
   settings.buildProgress = NULL;
   settings.userPtr = NULL;
-  settings.primitiveArrayCapacity = prims.capacity() * sizeof(RTCBuildPrimitive);
+  settings.primitiveArrayCapacity = extraSpace;
   // EMBREE_FIXME: calculate capacity properly = extraSpace;
 
   Node * root = (Node*) rtcBuildBVH(&settings);

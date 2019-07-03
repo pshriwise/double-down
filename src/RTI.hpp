@@ -57,7 +57,7 @@ class RayTracingInterface {
   ~RayTracingInterface() { buffer_storage.clear(); }
 
   // Public Functions
-  moab::ErrorCode init(std::string filename = "", bool closest_enabled = false);
+  moab::ErrorCode init(std::string filename = "", bool closest_enabled=true);
   void set_offset(moab::Range &vols);
   void create_scene(moab::EntityHandle vol);
   void commit_scene(moab::EntityHandle vol);
@@ -117,7 +117,7 @@ class RayTracingInterface {
 
   // Member variables
   private:
-  bool closest_enabled_{false};
+  bool closest_enabled_{true};
   moab::Interface* MBI;
   std::unique_ptr<moab::GeomTopoTool> GTT;
   DblTriStorage buffer_storage;
