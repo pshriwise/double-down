@@ -29,6 +29,10 @@ INCLUDE_DIRECTORIES( ${MOAB_INCLUDE_DIRS} )
 # Embree
 FIND_PACKAGE ( embree 3.5.1 REQUIRED )
 
+# Specify library name - might be necessary due to an issue CMake has with parsing
+# library names (e.g. libembree3.so.3.5.1)
+set(EMBREE_LIBRARY "${EMBREE_ROOT_DIR}/lib/libembree3.so")
+
 # Set install locations
 set( DD_BINARY_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/bin" )
 set( DD_INCLUDE_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/include" )
