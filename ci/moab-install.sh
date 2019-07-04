@@ -15,4 +15,6 @@ git clone -b $MOAB_BRANCH $MOAB_REPO
 mkdir build && cd build
 cmake ../moab -DENABLE_HDF5=ON -DCMAKE_INSTALL_PREFIX=$MOAB_INSTALL_DIR
 make -j && make -j test install
+cmake ../moab -DBUILD_SHARED_LIBS=OFF
+make -j install
 rm -rf $HOME/MOAB/moab
