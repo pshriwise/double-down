@@ -12,6 +12,8 @@ addons:
       - liblapack-dev
       - libtbb-dev
       - freeglut3-dev
+      - libglfw3
+      - libglfw3-dev
 env:
   global:
     - HDF5_ROOT=/usr
@@ -21,7 +23,6 @@ env:
     - LD_LIBRARY_PATH=$HOME/EMBREE/lib:$HOME/MOAB/lib:$HOME/DAGMC/lib:$HOME/dd/lib
     - DISPLAY=:99.0
 install:
-  - apt install libglfw3 libglfw3-dev
   - ./ci/moab-install.sh
   - ./ci/embree-install.sh
 script:
