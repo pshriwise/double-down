@@ -301,71 +301,38 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
                                   double &result, moab::EntityHandle* surface,
                                   moab::EntityHandle* facet) {
 
-
   std::pair<int, std::shared_ptr<DblTri>> buffer = buffer_storage.retrieve_buffer(vol);
 
-  size_t stackSize = 1024;
-  StackItem stack[stackSize];
-  StackItem* stackPtr = stack+1;
-  StackItem* stackEnd = stack + stackSize;
+  RTCDPointQuery point_query;
+  point_query.set_radius(inf);
+  point_query.time = 0.f;
+  point_query.set_point(loc);
 
-  const float floc[3] = {loc[0], loc[1], loc[2]};
+  RTCPointQueryInstanceStack instStack;
+  rtcInitPointQueryInstanceStack(&instStack);
+  rtcPointQuery(scenes[vol-sceneOffset], &point_query, &instStack,
+                (RTCPointQueryFunction)DblTriPointQueryFunc, (void*)buffer.second.get());
 
-  stack[0].ptr = root_map[vol];
-  stack[0].dist = neg_inf;
+  // handle not found case
+  if (point_query.geomID == RTC_INVALID_GEOMETRY_ID) {
+    if (surface) { surface = 0; }
+    if (facet) { facet = 0; }
+    result = inf;
+    return;
+  }
 
-  Vec3da closest;
-  double current_result = inf;
+  result = point_query.dradius;
+  const DblTri& this_tri = buffer.second.get()[point_query.primID];
+  if (surface) {
+    *surface = this_tri.surf;
+  }
+  if (facet) {
+    *facet = this_tri.handle;
+  }
 
-  while (true) pop:
-    {
-      // stack is empty, we're done
-      if(stackPtr == stack) break;
 
-      // move to next node
-      stackPtr--;
-      Node* cur = stackPtr->ptr;
 
-      // we've found a location closer than this node, move on
-      if(stackPtr->dist > current_result) { continue; }
 
-      while (true)
-        {
-          InnerNode* inode = dynamic_cast<InnerNode*>(cur);
-          if (!inode) { break; }
-          // check nodes
-          float d1 = inode->bounds[0].nearest(floc);
-          float d2 = inode->bounds[1].nearest(floc);
-
-          stackPtr->ptr = inode->children[0];
-          stackPtr->dist = d1;
-
-          stackPtr++;
-
-          stackPtr->ptr = inode->children[1];
-          stackPtr->dist = d2;
-
-          sort(*(stackPtr),*(stackPtr-1));
-
-          cur = stackPtr->ptr;
-        }
-
-      LeafNode* leaf = dynamic_cast<LeafNode*>(cur);
-      if(!leaf) { continue; }
-      // at leaf
-      for (const auto& id : leaf->ids) {
-        DblTri this_prim = buffer.second.get()[id];
-
-        double tmp = DblTriClosestFunc(this_prim, loc);
-        if ( tmp < current_result ) {
-          current_result = tmp;
-          if (surface) *surface = this_prim.surf;
-          if (facet) *facet = this_prim.handle;
-        }
-      }
-    }
-
-  result = current_result;
   return;
 
 }

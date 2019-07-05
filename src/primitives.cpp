@@ -124,6 +124,35 @@ void DblTriOccludedFunc(RTCOccludedFunctionNArguments* args) {
   }
 }
 
+bool DblTriPointQueryFunc(RTCPointQueryFunctionArguments* args) {
+
+  RTCDPointQuery* pq = (RTCDPointQuery*) args->query;
+
+  double pnt[3];
+  pnt[0] = pq->dx;
+  pnt[0] = pq->dy;
+  pnt[0] = pq->dz;
+
+  size_t item = args->primID;
+
+  void* tris_i = args->userPtr;
+  const DblTri* tris = (const DblTri*) tris_i;
+  const DblTri& this_tri = tris[item];
+
+  double dist = DblTriClosestFunc(this_tri, pnt);
+
+  if (dist < args->query->radius) {
+    pq->radius = dist;
+    pq->dradius = dist;
+    pq->primID = args->primID;
+    pq->geomID = args->geomID;
+    return true;
+  } else {
+    return false;
+  }
+
+}
+
 double DblTriClosestFunc(const DblTri& tri, const double loc[3]) {
 
 

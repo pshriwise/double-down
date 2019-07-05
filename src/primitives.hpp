@@ -61,6 +61,8 @@ void DblTriIntersectFunc(RTCIntersectFunctionNArguments* args);
 
 void DblTriOccludedFunc(RTCOccludedFunctionNArguments* args);
 
+bool DblTriPointQueryFunc(RTCPointQueryFunctionArguments* args);
+
 double DblTriClosestFunc(const DblTri& tri, const double loc[3]);
 
 #endif

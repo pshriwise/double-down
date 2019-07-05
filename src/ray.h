@@ -65,4 +65,22 @@ struct RTCDRayHit {
 
 };
 
+struct RTCDPointQuery : RTCPointQuery {
+
+  void set_radius(double rad) {
+    radius = rad;
+    dradius = rad;
+  }
+
+  void set_point(const double xyz[3]) {
+    x = xyz[0]; y = xyz[1]; z = xyz[2];
+    dx = xyz[0]; dy = xyz[1]; dz = xyz[2];
+  }
+
+  unsigned int primID = RTC_INVALID_GEOMETRY_ID;
+  unsigned int geomID = RTC_INVALID_GEOMETRY_ID;
+  double dx, dy, dz;
+  double dradius;
+};
+
 #endif
