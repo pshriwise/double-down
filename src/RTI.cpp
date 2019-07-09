@@ -206,7 +206,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
 
       DblTri* buff_ptr = emtris.get() + buffer_start;
 
-      rtcSetGeometryUserData(geom_0,buff_ptr);
+      rtcSetGeometryUserData(geom_0, buff_ptr);
 
       for (int k = 0; k < num_tris; k++) {
         buff_ptr[k].moab_instance = MBI;
@@ -310,8 +310,9 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
 
   RTCPointQueryInstanceStack instStack;
   rtcInitPointQueryInstanceStack(&instStack);
-  rtcPointQuery(scenes[vol-sceneOffset], &point_query, &instStack,
-                (RTCPointQueryFunction)DblTriPointQueryFunc, (void*)buffer.second.get());
+  RTCScene scene = scenes[vol-sceneOffset];
+  rtcPointQuery(scene, &point_query, &instStack,
+                (RTCPointQueryFunction)DblTriPointQueryFunc, (void*)&scene);
 
   // handle not found case
   if (point_query.geomID == RTC_INVALID_GEOMETRY_ID) {

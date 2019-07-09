@@ -130,18 +130,19 @@ bool DblTriPointQueryFunc(RTCPointQueryFunctionArguments* args) {
 
   double pnt[3];
   pnt[0] = pq->dx;
-  pnt[0] = pq->dy;
-  pnt[0] = pq->dz;
+  pnt[1] = pq->dy;
+  pnt[2] = pq->dz;
 
   size_t item = args->primID;
 
-  void* tris_i = args->userPtr;
+  RTCGeometry g = rtcGetGeometry(*(RTCScene*)args->userPtr, args->geomID);
+
+  void* tris_i = rtcGetGeometryUserData(g);
   const DblTri* tris = (const DblTri*) tris_i;
   const DblTri& this_tri = tris[item];
 
   double dist = DblTriClosestFunc(this_tri, pnt);
-
-  if (dist < args->query->radius) {
+  if (dist < pq->dradius) {
     pq->radius = dist;
     pq->dradius = dist;
     pq->primID = args->primID;
