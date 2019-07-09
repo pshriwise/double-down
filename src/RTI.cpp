@@ -228,10 +228,6 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
 
     rtcCommitScene(scene);
 
-    if (closest_enabled_) {
-      buildBVH(vol);
-    }
-
   } // end volume loop
 
   return moab::MB_SUCCESS;
