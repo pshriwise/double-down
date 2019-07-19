@@ -56,7 +56,10 @@ void DblTriIntersectFunc(void* tris_i, RTCDRay& ray, size_t item) {
   bool hit = plucker_ray_tri_intersect(coords, ray_org, ray_dir, dist, ptr);
 
   if ( hit ) {
-    if (ray.geomID != -1 && dist > ray.dtfar) { return; }
+    if (ray.geomID != -1 && dist > ray.dtfar) {
+      ray.geomID = -1;
+      return;
+    }
 
     ray.dtfar = dist;
     ray.tfar = dist;

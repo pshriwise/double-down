@@ -217,7 +217,6 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
 
 void RayTracingInterface::buildBVH(moab::EntityHandle vol) {
 
-  std::cout << "Building tree for volume with handle: " << vol << "\n";
   RTCDevice device = rtcNewDevice();
 
   RTCBVH bvh = rtcNewBVH(device);
@@ -562,7 +561,7 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
   neg_ray.geomID = -1;
   neg_ray.primID = -1;
   neg_ray.rf_type = RayFireType::RF;
-  neg_ray.orientation = -ray_orientation;
+  neg_ray.orientation = ray_orientation;
   if (history) { neg_ray.rh = history; }
   neg_ray.set_len(neg_ray_len);
 
@@ -592,7 +591,7 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
     if (1==result) use_neg_intersection = true;
   }
 
-  if(use_neg_intersection) {
+  if(use_neg_intersection && neg_ray.geomID != RTC_INVALID_GEOMETRY_ID) {
     next_surf_dist = 0;
     next_surf = neg_ray.surf_handle;
   }
@@ -604,6 +603,7 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
     next_surf_dist = 1E37;
     next_surf = 0;
   }
+
 
   if(history) {
     if(use_neg_intersection) {
