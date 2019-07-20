@@ -682,8 +682,6 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
     next_surf = 0;
   }
 
-  next_surf = 0; next_surf_dist = huge_val;
-
   if(history) {
     if(use_neg_intersection) {
       history->add_entity(neg_hit.prim_handle);
