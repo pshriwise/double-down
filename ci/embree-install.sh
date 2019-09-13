@@ -2,7 +2,7 @@
 set -ex
 
 # Embree Variables
-EMBREE_TAG='v3.6.0-alpha.0'
+EMBREE_TAG='v3.6.1'
 EMBREE_REPO='https://github.com/embree/embree'
 EMBREE_INSTALL_DIR=$HOME/EMBREE/
 
