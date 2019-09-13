@@ -221,7 +221,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
       rtcSetGeometryBoundsFunction(geom_0,(RTCBoundsFunction)&DblTriBounds, NULL);
       rtcSetGeometryIntersectFunction (geom_0, (RTCIntersectFunctionN)&MBDblTriIntersectFunc);
       rtcSetGeometryOccludedFunction (geom_0, (RTCOccludedFunctionN)&DblTriOccludedFunc);
-
+      // rtcSetGeometryPointQueryFunction(geom_0,(RTCPointQueryFunction)DblTriPointQueryFunc);
       rtcCommitGeometry(geom_0);
 
     } // end surface loop
@@ -304,10 +304,13 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
   point_query.time = 0.f;
   point_query.set_point(loc);
 
-  RTCPointQueryInstanceStack instStack;
-  rtcInitPointQueryInstanceStack(&instStack);
+  RTCPointQueryContext pq_context;
+  rtcInitPointQueryContext(&pq_context);
+
   RTCScene scene = scenes[vol-sceneOffset];
-  rtcPointQuery(scene, &point_query, &instStack,
+
+
+  rtcPointQuery(scene, &point_query, &pq_context,
                 (RTCPointQueryFunction)DblTriPointQueryFunc, (void*)&scene);
 
   // handle not found case
