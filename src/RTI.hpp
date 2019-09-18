@@ -115,6 +115,10 @@ class RayTracingInterface {
   void closest(moab::EntityHandle vol, const double loc[3],
                double &result, moab::EntityHandle* surface = 0, moab::EntityHandle* facet = 0);
 
+  void get_normal(moab::EntityHandle surf, const double loc[3],
+                  double angle[3], moab::EntityHandle facet = 0);
+
+
   // Member variables
   private:
   bool closest_enabled_{true};

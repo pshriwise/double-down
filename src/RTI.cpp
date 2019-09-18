@@ -293,6 +293,41 @@ void RayTracingInterface::buildBVH(moab::EntityHandle vol) {
 
 }
 
+void RayTracingInterface::get_normal(moab::EntityHandle surf, const double loc[3],
+                                     double angle[3], moab::EntityHandle facet) {
+
+  moab::ErrorCode rval;
+
+  if (facet == 0) {
+     MB_CHK_SET_ERR_CONT(rval, "Can't get a normal without a history yet");
+     return;
+  }
+
+
+  Vec3da coords[3];
+  const moab::EntityHandle *conn;
+  int len;
+  rval = MBI->get_connectivity(facet, conn, len);
+  MB_CHK_SET_ERR_CONT(rval, "Failed to get connectivity of triangle: " << facet);
+
+  if (3 != len) {
+    MB_CHK_SET_ERR_CONT(rval, "Incorrect connectivity length for a triangle: " << len);
+  }
+
+  rval = MBI->get_coords(conn, 3, &(coords[0][0]));
+  MB_CHK_SET_ERR_CONT(rval, "Failed to get coords for triangle: " << facet);
+  
+  Vec3da normal(0.0);
+
+  coords[1] -= coords[0];
+  coords[2] -= coords[0];
+  normal += cross(coords[1], coords[2]);
+
+  angle[0] = normal[0];
+  angle[1] = normal[1];
+  angle[2] = normal[2];
+}
+
 void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
                                   double &result, moab::EntityHandle* surface,
                                   moab::EntityHandle* facet) {
@@ -308,7 +343,6 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
   rtcInitPointQueryContext(&pq_context);
 
   RTCScene scene = scenes[vol-sceneOffset];
-
 
   rtcPointQuery(scene, &point_query, &pq_context,
                 (RTCPointQueryFunction)DblTriPointQueryFunc, (void*)&scene);
@@ -329,9 +363,6 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
   if (facet) {
     *facet = this_tri.handle;
   }
-
-
-
 
   return;
 
