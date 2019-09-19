@@ -8,6 +8,8 @@ DAGMC_INSTALL_DIR=$HOME/DAGMC/
 
 CURRENT_DIR=$(pwd)
 
+export LD_LIBRARY_PATH=$HOME/dd/lib:$LD_LIBRARY_PATH
+
 # DAGMC Install
 cd $HOME
 mkdir DAGMC && cd DAGMC
