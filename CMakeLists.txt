@@ -50,8 +50,8 @@ add_library( dd SHARED "src/RTI.cpp" "src/primitives.cpp" "src/MOABRay.cpp")
 target_include_directories( dd INTERFACE "${CMAKE_INSTALL_PREFIX}/include" ${EMBREE_INCLUDE_DIRS})
 target_link_libraries( dd ${MOAB_LIBRARIES} ${EMBREE_LIBRARY} )
 set_property(TARGET dd APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<INSTALL_INTERFACE:/include>)
-install( TARGETS dd DESTINATION "${DD_LIBRARY_INSTALL_LOCATION}" )
 export( TARGETS dd FILE "${DD_CMAKE_CONFIG_LOCATION}/ddTargets.cmake" )
+install( TARGETS dd DESTINATION "${DD_LIBRARY_INSTALL_LOCATION}" )
 
 # install headers
 install ( FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/RTI.hpp" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
