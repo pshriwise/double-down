@@ -45,7 +45,7 @@ MESSAGE ( STATUS "EMBREE_INCLUDE_DIRS is " ${EMBREE_INCLUDE_DIRS} )
 INCLUDE_DIRECTORIES( ${EMBREE_INCLUDE_DIRS} )
 
 # add library
-add_library( dd SHARED "src/RTI.cpp" "src/primitives.cpp" "src/MOABRay.cpp")
+add_library( dd SHARED "src/RTI.cpp" "src/primitives.cpp" "src/MOABRay.cpp" "src/MOABDirectAccess.cpp")
 
 target_include_directories( dd INTERFACE "${CMAKE_INSTALL_PREFIX}/include" ${EMBREE_INCLUDE_DIRS})
 target_link_libraries( dd ${MOAB_LIBRARIES} ${EMBREE_LIBRARY} )

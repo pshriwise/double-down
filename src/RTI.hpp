@@ -9,6 +9,7 @@
 
 #include "primitives.hpp"
 #include "MOABRay.h"
+#include "MOABDirectAccess.h"
 
 #include <unordered_map>
 #include <memory>
@@ -123,6 +124,7 @@ class RayTracingInterface {
   private:
   bool closest_enabled_{true};
   moab::Interface* MBI;
+  MBDirectAccess* mdam;
   std::unique_ptr<moab::GeomTopoTool> GTT;
   DblTriStorage buffer_storage;
   std::unordered_map<moab::EntityHandle, RTCScene> scene_map;

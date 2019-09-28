@@ -9,6 +9,7 @@
 #include "RTI.hpp"
 #include "AABB.h"
 
+
 void error(void* dum, RTCError code, const char* str) {
   if (code != RTC_ERROR_NONE) {
     std::cout << "Error occured" << std::endl;
@@ -143,6 +144,8 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
 
   rtcSetDeviceErrorFunction(g_device, (RTCErrorFunction)error, NULL);
 
+  mdam = new MBDirectAccess(MBI);
+
   moab::Range vols;
   rval = get_vols(vols);
   MB_CHK_SET_ERR(rval, "Failed to get MOAB volumes");
@@ -210,6 +213,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
 
       for (int k = 0; k < num_tris; k++) {
         buff_ptr[k].moab_instance = MBI;
+        buff_ptr[k].mdam = mdam;
         buff_ptr[k].handle = tris[k];
         buff_ptr[k].surf = this_surf;
         buff_ptr[k].geomID = emsurf;
@@ -316,7 +320,7 @@ void RayTracingInterface::get_normal(moab::EntityHandle surf, const double loc[3
 
   rval = MBI->get_coords(conn, 3, &(coords[0][0]));
   MB_CHK_SET_ERR_CONT(rval, "Failed to get coords for triangle: " << facet);
-  
+
   Vec3da normal(0.0);
 
   coords[1] -= coords[0];
@@ -372,6 +376,7 @@ void RayTracingInterface::shutdown() {
   for(auto s : scenes) { rtcReleaseScene(s); }
 
   if(MBI) { delete MBI; }
+  delete mdam;
 
   rtcReleaseDevice (g_device);
 }
