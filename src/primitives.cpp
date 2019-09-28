@@ -1,6 +1,7 @@
 
 #include "primitives.hpp"
 
+
 void intersectionFilter(void* ptr, RTCDRayHit &rayhit)
 {
   switch(rayhit.ray.rf_type)
@@ -24,9 +25,9 @@ void DblTriBounds(const RTCBoundsFunctionArguments* args)
   const DblTri* tris = (const DblTri*) tris_i;
   const DblTri& this_tri = tris[item];
 
-  moab::Interface* mbi = (moab::Interface*) this_tri.moab_instance;
+  MBDirectAccess* mdam = (MBDirectAccess*) this_tri.mdam;
 
-  bounds_o = DblTriBounds(mbi, this_tri.handle);
+  bounds_o = DblTriBounds(mdam, this_tri.handle);
 
   return;
 }
@@ -42,20 +43,12 @@ void DblTriIntersectFunc(RTCIntersectFunctionNArguments* args) {
   const DblTri* tris = (const DblTri*) tris_i;
   const DblTri& this_tri = tris[item];
 
-  moab::Interface* mbi = (moab::Interface*) this_tri.moab_instance;
-  moab::ErrorCode rval;
+  // moab::Interface* mbi = (moab::Interface*) this_tri.moab_instance;
+  // moab::ErrorCode rval;
 
-  std::vector<moab::EntityHandle> conn;
-  rval = mbi->get_connectivity(&(this_tri.handle), 1, conn);
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get triangle connectivity");
+  MBDirectAccess* mdam = (MBDirectAccess*) this_tri.mdam;
 
-  Vec3da coords[3];
-  rval = mbi->get_coords(&conn[0], 1, &(coords[0][0]));
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get vertext coordinates");
-  rval = mbi->get_coords(&conn[1], 1, &(coords[1][0]));
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get vertext coordinates");
-  rval = mbi->get_coords(&conn[2], 1, &(coords[2][0]));
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get vertext coordinates");
+  std::array<Vec3da, 3> coords = mdam->get_coords(this_tri.handle);
 
   double dist;
   double nonneg_ray_len = 1e17;
@@ -63,7 +56,7 @@ void DblTriIntersectFunc(RTCIntersectFunctionNArguments* args) {
   Vec3da ray_org(ray.dorg);
   Vec3da ray_dir(ray.ddir);
 
-  bool hit_tri = plucker_ray_tri_intersect(coords, ray_org, ray_dir, dist, ptr);
+  bool hit_tri = plucker_ray_tri_intersect(&(coords[0]), ray_org, ray_dir, dist, ptr);
 
   if ( hit_tri ) {
     if (hit.geomID != -1 && dist > ray.dtfar) {
@@ -101,16 +94,9 @@ void DblTriOccludedFunc(RTCOccludedFunctionNArguments* args) {
   const DblTri* tris = (const DblTri*) tris_i;
   const DblTri& this_tri = tris[item];
 
-  moab::Interface* mbi = (moab::Interface*) this_tri.moab_instance;
-  moab::ErrorCode rval;
+  MBDirectAccess* mdam = (MBDirectAccess*) mdam;
 
-  std::vector<moab::EntityHandle> conn;
-  rval = mbi->get_connectivity(&(this_tri.handle), 1, conn);
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get triangle connectivity");
-
-  Vec3da coords[3];
-  rval = mbi->get_coords(&conn.front(), conn.size(), &(coords[0][0]));
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get vertext coordinates");
+  std::array<Vec3da, 3> coords = mdam->get_coords(this_tri.handle);
 
   double dist;
   double nonneg_ray_len = 1e37;
@@ -118,7 +104,7 @@ void DblTriOccludedFunc(RTCOccludedFunctionNArguments* args) {
   Vec3da ray_org(ray->dorg);
   Vec3da ray_dir(ray->ddir);
 
-  bool hit_tri = plucker_ray_tri_intersect(coords, ray_org, ray_dir, dist, ptr);
+  bool hit_tri = plucker_ray_tri_intersect(&(coords[0]), ray_org, ray_dir, dist, ptr);
   if ( hit_tri ) {
     ray->set_len(neg_inf);
   }
@@ -156,26 +142,14 @@ bool DblTriPointQueryFunc(RTCPointQueryFunctionArguments* args) {
 
 double DblTriClosestFunc(const DblTri& tri, const double loc[3]) {
 
+  MBDirectAccess* mdam = (MBDirectAccess*) tri.mdam;
 
-  moab::Interface* mbi = (moab::Interface*) tri.moab_instance;
-  moab::ErrorCode rval;
-
-  std::vector<moab::EntityHandle> conn;
-  rval = mbi->get_connectivity(&(tri.handle), 1, conn);
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get triangle connectivity");
-
-  Vec3da coords[3];
-  rval = mbi->get_coords(&conn[0], 1, &(coords[0][0]));
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get vertext coordinates");
-  rval = mbi->get_coords(&conn[1], 1, &(coords[1][0]));
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get vertext coordinates");
-  rval = mbi->get_coords(&conn[2], 1, &(coords[2][0]));
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get vertext coordinates");
+  std::array<Vec3da, 3> coords = mdam->get_coords(tri.handle);
 
   Vec3da location(loc);
 
   Vec3da result;
-  closest_location_on_tri(location, coords, result);
+  closest_location_on_tri(location, &(coords[0]), result);
 
   return (result - location).length();
 }

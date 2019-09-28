@@ -8,9 +8,9 @@
 
 #include "ray.h"
 #include "TriangleIntersectors.h"
+#include "MOABDirectAccess.h"
 
 struct DblTri {
-  void* moab_instance;
   void* mdam;
   moab::EntityHandle handle;
   unsigned int geomID;
@@ -18,24 +18,9 @@ struct DblTri {
   int sense;
 };
 
-inline RTCBounds DblTriBounds(const moab::Interface *mbi, moab::EntityHandle tri_handle) {
-  moab::ErrorCode rval;
+inline RTCBounds DblTriBounds(MBDirectAccess* mdam, moab::EntityHandle tri_handle) {
 
-  std::vector<moab::EntityHandle> conn;
-  rval = mbi->get_connectivity(&tri_handle, 1, conn);
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get triangle connectivity");
-
-  if (conn.size() != 3) {
-    throw std::length_error("Incorrect number of coordinates returned for a triangle entity.");
-  }
-
-  moab::CartVect coords[3];
-  rval = mbi->get_coords(&conn[0], 1, coords[0].array());
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get vertext coordinates");
-  rval = mbi->get_coords(&conn[1], 1, coords[1].array());
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get vertext coordinates");
-  rval = mbi->get_coords(&conn[2], 1, coords[2].array());
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get vertext coordinates");
+  std::array<Vec3da, 3> coords = mdam->get_coords(tri_handle);
 
   double bump_val = 5e-03;
 

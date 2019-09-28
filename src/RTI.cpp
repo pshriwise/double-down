@@ -212,7 +212,6 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
       rtcSetGeometryUserData(geom_0, buff_ptr);
 
       for (int k = 0; k < num_tris; k++) {
-        buff_ptr[k].moab_instance = MBI;
         buff_ptr[k].mdam = mdam;
         buff_ptr[k].handle = tris[k];
         buff_ptr[k].surf = this_surf;
@@ -264,7 +263,7 @@ void RayTracingInterface::buildBVH(moab::EntityHandle vol) {
   for(int i = 0; i < buffer.first; i++) {
     DblTri dtri = buffer.second.get()[i];
 
-    RTCBounds bounds = DblTriBounds((moab::Interface*)dtri.moab_instance,
+    RTCBounds bounds = DblTriBounds(mdam,
                                     dtri.handle);
     RTCBuildPrimitive prim;
     prim.lower_x = bounds.lower_x;
