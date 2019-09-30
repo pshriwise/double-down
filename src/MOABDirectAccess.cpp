@@ -1,3 +1,4 @@
+#include <sstream>
 
 #include "MOABDirectAccess.h"
 
@@ -25,6 +26,11 @@ MBDirectAccess::MBDirectAccess(std::shared_ptr<Interface> mbi) : mbi(mbi) {
   EntityHandle* conntmp;
   rval = mbi->connect_iterate(tris.begin(), tris.end(), conntmp, element_stride, num_elements);
   MB_CHK_SET_ERR_CONT(rval, "Failed to get direct access to triangle elements");
+  if (num_elements != (int)tris.size()) {
+    std::stringstream msg;
+    msg << "Incorrect number of elements (" << num_elements << ") added to the direct access manager. Expected " << tris.size() << ".";
+    throw std::out_of_range(msg.str());
+  }
   // set const pointers
   conn = &(*conntmp);
 
@@ -32,6 +38,12 @@ MBDirectAccess::MBDirectAccess(std::shared_ptr<Interface> mbi) : mbi(mbi) {
   double * xtmp, * ytmp, * ztmp;
   rval = mbi->coords_iterate(verts.begin(), verts.end(), xtmp, ytmp, ztmp, num_vertices);
   MB_CHK_SET_ERR_CONT(rval, "Failed to get direct access to vertex elements");
+  if (num_elements != (int)tris.size()) {
+    std::stringstream msg;
+    msg << "Incorrect number of vertices (" << num_elements << ") added to the direct access manager. Expected " << tris.size() << ".";
+    throw std::out_of_range(msg.str());
+  }
+
   // set const pointers
   x = &(*xtmp); y = &(*ytmp); z = &(*ztmp);
 
