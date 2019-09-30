@@ -135,7 +135,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
   if ("" == filename && NULL == MBI) {
     return moab::MB_FAILURE;
   } else if (!MBI) {
-    MBI = new moab::Core();
+    MBI = std::shared_ptr<moab::Interface>(new moab::Core());
     rval = MBI->load_file(filename.c_str());
     MB_CHK_SET_ERR(rval, "Failed to load the specified MOAB file");
   }
@@ -144,7 +144,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
 
   rtcSetDeviceErrorFunction(g_device, (RTCErrorFunction)error, NULL);
 
-  mdam = new MBDirectAccess(MBI);
+  mdam = std::shared_ptr<MBDirectAccess>(new MBDirectAccess(MBI));
 
   moab::Range vols;
   rval = get_vols(vols);
@@ -154,7 +154,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
   // set the EH offset
   sceneOffset = *vols.begin();
 
-  GTT = std::unique_ptr<moab::GeomTopoTool>(new moab::GeomTopoTool(MBI));
+  GTT = std::unique_ptr<moab::GeomTopoTool>(new moab::GeomTopoTool(MBI.get()));
   // create an Embree geometry instance for each surface
   for (moab::Range::iterator i = vols.begin(); i != vols.end(); i++) {
     moab::EntityHandle vol = *i;
@@ -212,7 +212,7 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
       rtcSetGeometryUserData(geom_0, buff_ptr);
 
       for (int k = 0; k < num_tris; k++) {
-        buff_ptr[k].mdam = mdam;
+        buff_ptr[k].mdam = mdam.get();
         buff_ptr[k].handle = tris[k];
         buff_ptr[k].surf = this_surf;
         buff_ptr[k].geomID = emsurf;
@@ -263,8 +263,8 @@ void RayTracingInterface::buildBVH(moab::EntityHandle vol) {
   for(int i = 0; i < buffer.first; i++) {
     DblTri dtri = buffer.second.get()[i];
 
-    RTCBounds bounds = DblTriBounds(mdam,
-                                    dtri.handle);
+    RTCBounds bounds = DblTriBounds(mdam.get(), dtri.handle);
+
     RTCBuildPrimitive prim;
     prim.lower_x = bounds.lower_x;
     prim.lower_y = bounds.lower_y;
@@ -373,10 +373,6 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
 
 void RayTracingInterface::shutdown() {
   for(auto s : scenes) { rtcReleaseScene(s); }
-
-  if(MBI) { delete MBI; }
-  delete mdam;
-
   rtcReleaseDevice (g_device);
 }
 

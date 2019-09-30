@@ -123,8 +123,8 @@ class RayTracingInterface {
   // Member variables
   private:
   bool closest_enabled_{true};
-  moab::Interface* MBI;
-  MBDirectAccess* mdam;
+  std::shared_ptr<moab::Interface> MBI;
+  std::shared_ptr<MBDirectAccess> mdam;
   std::unique_ptr<moab::GeomTopoTool> GTT;
   DblTriStorage buffer_storage;
   std::unordered_map<moab::EntityHandle, RTCScene> scene_map;

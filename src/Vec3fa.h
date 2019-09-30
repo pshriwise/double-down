@@ -39,9 +39,12 @@ struct __aligned(16) Vec3fa {
 
   __forceinline float length () const { return sqrtf(x*x + y*y + z*z); }
 
-  __forceinline Vec3fa normalize() { float len = length();
+  __forceinline Vec3fa normalize() {
+    float len = length();
     len = len < min_rcp_input ? min_rcp_input : len;
-    x /= len; y /= len; z/= len; }
+    x /= len; y /= len; z/= len;
+    return *this;
+  }
 
 };
 
