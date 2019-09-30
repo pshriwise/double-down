@@ -55,7 +55,7 @@ class RayTracingInterface {
 
   RayTracingInterface() : MBI(NULL) { }
 
-  ~RayTracingInterface() { buffer_storage.clear(); }
+  ~RayTracingInterface() { shutdown(); buffer_storage.clear(); }
 
   // Public Functions
   moab::ErrorCode init(std::string filename = "", bool closest_enabled=true);
