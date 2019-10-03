@@ -306,8 +306,7 @@ void RayTracingInterface::get_normal(moab::EntityHandle surf, const double loc[3
      return;
   }
 
-
-  Vec3da coords[3];
+  moab::CartVect coords[3];
   const moab::EntityHandle *conn;
   int len;
   rval = MBI->get_connectivity(facet, conn, len);
@@ -320,11 +319,12 @@ void RayTracingInterface::get_normal(moab::EntityHandle surf, const double loc[3
   rval = MBI->get_coords(conn, 3, &(coords[0][0]));
   MB_CHK_SET_ERR_CONT(rval, "Failed to get coords for triangle: " << facet);
 
-  Vec3da normal(0.0);
+  moab::CartVect normal(0.0);
 
   coords[1] -= coords[0];
   coords[2] -= coords[0];
-  normal += cross(coords[1], coords[2]);
+  normal = coords[1] * coords[2];
+  normal.normalize();
 
   angle[0] = normal[0];
   angle[1] = normal[1];
@@ -600,7 +600,6 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
   mbray.mask = -1;
   if (history) { mbray.rh = history; }
 
-
   MBHit& mbhit = rayhit.hit;
   mbhit.geomID = RTC_INVALID_GEOMETRY_ID;
   mbhit.primID = RTC_INVALID_GEOMETRY_ID;
@@ -625,7 +624,7 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
   neg_ray.set_dir(-mbray.ddir);
   neg_ray.tnear = 0.0;
   neg_ray.rf_type = RayFireType::RF;
-  neg_ray.orientation = ray_orientation;
+  neg_ray.orientation = -ray_orientation;
   if (history) { neg_ray.rh = history; }
   neg_ray.set_len(neg_ray_len);
 

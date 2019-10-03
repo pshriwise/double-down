@@ -72,6 +72,7 @@ void DblTriIntersectFunc(RTCIntersectFunctionNArguments* args) {
     hit.primID = (unsigned int) item;
 
     Vec3da normal = cross((coords[1] - coords[0]),(coords[2] - coords[0]));
+    normal.normalize();
 
     if( -1 == this_tri.sense ) normal *= -1;
 
