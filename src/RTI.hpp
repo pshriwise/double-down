@@ -6,6 +6,7 @@
 
 #include "moab/Core.hpp"
 #include "moab/GeomQueryTool.hpp"
+#include "moab/GeomTopoTool.hpp"
 
 #include "primitives.hpp"
 #include "MOABRay.h"
@@ -51,14 +52,23 @@ class RayTracingInterface {
   };
 
   public:
-  RayTracingInterface(moab::Interface* mbi) : MBI(mbi) { }
+  RayTracingInterface(moab::Interface* mbi);
 
-  RayTracingInterface() : MBI(NULL) { }
+  RayTracingInterface(moab::Interface* mbi,
+                      bool find_geomsets,
+                      moab::EntityHandle modelRootSet,
+                      bool p_rootSets_vector,
+                      bool restore_rootSets,
+                      bool trace_counting,
+                      double overlap_thickness,
+                      double numerical_precision);
+
+  RayTracingInterface() : MBI(nullptr) { }
 
   ~RayTracingInterface() { shutdown(); buffer_storage.clear(); }
 
   // Public Functions
-  moab::ErrorCode init(std::string filename = "", bool closest_enabled=true);
+  moab::ErrorCode init(std::string filename = "");
   void set_offset(moab::Range &vols);
   void create_scene(moab::EntityHandle vol);
   void commit_scene(moab::EntityHandle vol);
@@ -68,14 +78,20 @@ class RayTracingInterface {
 
   void add_triangles(moab::Interface* MBI, moab::EntityHandle vol, moab::Range triangles_eh, int sense);
 
-  void dag_point_in_volume(const moab::EntityHandle volume,
-                           const double xyz[3],
-                           int& result,
-                           const double *uvw,
-                           moab::GeomQueryTool::RayHistory *history,
-                           double overlap_tol = 0.0,
-                           moab::EntityHandle = 0);
+  moab::ErrorCode point_in_volume(const moab::EntityHandle volume,
+                                  const double xyz[3],
+                                  int& result,
+                                  const double *uvw,
+                                  const moab::GeomQueryTool::RayHistory *history,
+                                  double overlap_tol = 0.0);
 
+  moab::ErrorCode point_in_volume_slow(moab::EntityHandle volume,
+                                       const double xyz[3],
+                                       int& result);
+
+  moab::ErrorCode poly_solid_angle( moab::EntityHandle face,
+                                    const moab::CartVect& point,
+                                    double& area );
 
   void boundary_case(moab::EntityHandle volume,
                      int& result,
@@ -86,25 +102,22 @@ class RayTracingInterface {
                      moab::EntityHandle surface);
 
 
-  void test_volume_boundary(const moab::EntityHandle volume,
-                                                 const moab::EntityHandle surface,
-                                                 const double xyz[3],
-                                                 const double uvw[3],
-                                                 int& result,
-                            const moab::GeomQueryTool::RayHistory* history = 0);
+  moab::ErrorCode test_volume_boundary(const moab::EntityHandle volume,
+                                       const moab::EntityHandle surface,
+                                       const double xyz[3],
+                                       const double uvw[3],
+                                       int& result,
+                                       const moab::GeomQueryTool::RayHistory* history = 0);
 
-  void ray_fire(moab::EntityHandle volume, const double origin[3],
-                const double dir[3], RayFireType filt_func, double tnear,
-                int &em_surf, double &dist_to_hit, float norm[3]);
-
-  void dag_ray_fire(const moab::EntityHandle volume,
-                    const double point[3],
-                    const double dir[3],
-                    moab::EntityHandle& next_surf,
-                    double& next_surf_dist,
-                    moab::GeomQueryTool::RayHistory* history = NULL,
-                    double user_dist_limit = 0,
-                    int ray_orientation = 1);
+  moab::ErrorCode ray_fire(const moab::EntityHandle volume,
+                           const double point[3],
+                           const double dir[3],
+                           moab::EntityHandle& next_surf,
+                           double& next_surf_dist,
+                           moab::GeomQueryTool::RayHistory* history = 0,
+                           double user_dist_limit = 0,
+                           int ray_orientation = 1,
+                           void* dum=NULL);
 
   bool point_in_vol(float coordinate[3], float dir[3]);
 
@@ -113,17 +126,47 @@ class RayTracingInterface {
 
   void buildBVH(moab::EntityHandle vol);
 
+  moab::ErrorCode
+  closest_to_location(moab::EntityHandle volume,
+                      const double point[3],
+                      double & result,
+                      moab::EntityHandle* closest_surf = 0);
+
   void closest(moab::EntityHandle vol, const double loc[3],
                double &result, moab::EntityHandle* surface = 0, moab::EntityHandle* facet = 0);
 
-  void get_normal(moab::EntityHandle surf, const double loc[3],
-                  double angle[3], moab::EntityHandle facet = 0);
+  moab::ErrorCode get_normal(moab::EntityHandle surf,
+                             const double loc[3],
+                             double angle[3],
+                             const moab::GeomQueryTool::RayHistory* history = 0);
 
+  moab::ErrorCode
+  measure_volume(moab::EntityHandle volume,
+                 double& result);
+
+  moab::ErrorCode
+  measure_area(moab::EntityHandle surface,
+               double& result);
+
+  // inline functions
+  inline
+  moab::GeomTopoTool * gttool() { return GTT.get(); }
+
+  inline
+  double get_numerical_precision() { return numerical_precision; }
+
+  inline
+  double get_overlap_thickness() { return overlap_thickness; }
+
+  inline
+  void set_numerical_precision(double val) { numerical_precision = val; }
+
+  inline
+  void set_overlap_thickness(double val) { overlap_thickness = val; }
 
   // Member variables
   private:
-  bool closest_enabled_{true};
-  std::shared_ptr<moab::Interface> MBI;
+  moab::Interface* MBI;
   std::shared_ptr<MBDirectAccess> mdam;
   std::unique_ptr<moab::GeomTopoTool> GTT;
   DblTriStorage buffer_storage;
@@ -132,6 +175,12 @@ class RayTracingInterface {
   std::vector<RTCScene> scenes;
   moab::EntityHandle sceneOffset;
   std::unordered_map<moab::EntityHandle, Node*> root_map;
+
+  // a couple values we never touch really
+  double numerical_precision {1E-3};
+  double overlap_thickness {0.0};
+
+
   RTCDevice g_device;
 };
 

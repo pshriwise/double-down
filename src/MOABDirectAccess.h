@@ -14,7 +14,7 @@ class MBDirectAccess {
 
   // constructor
 public:
-  MBDirectAccess(std::shared_ptr<Interface> mbi);
+  MBDirectAccess(Interface* mbi);
 
   std::array<Vec3da, 3> get_coords(const EntityHandle& tri) {
     size_t conn_idx = element_stride * (tri - first_element);
@@ -32,7 +32,7 @@ public:
 
 private:
 
-  std::shared_ptr<Interface> mbi;
+  Interface* mbi;
 
   int num_elements {-1};
   int num_vertices {-1};

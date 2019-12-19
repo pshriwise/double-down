@@ -34,7 +34,7 @@ struct MBRay : RTCDRay {
 
   }
   int orientation;
-  moab::GeomQueryTool::RayHistory* rh;
+  const moab::GeomQueryTool::RayHistory* rh;
 };
 
 struct MBRayHit {

@@ -125,20 +125,33 @@ public:
 
 typedef StackItemT<Node*> StackItem;
 
-moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_enabled)
+RayTracingInterface::RayTracingInterface(moab::Interface* mbi) : MBI(mbi) {
+  GTT = std::unique_ptr<moab::GeomTopoTool>(new moab::GeomTopoTool(MBI));
+}
+
+
+RayTracingInterface::RayTracingInterface(moab::Interface* mbi,
+                                         bool find_geomsets,
+                                         moab::EntityHandle modelRootSet,
+                                         bool p_rootSets_vector,
+                                         bool restore_rootSets,
+                                         bool trace_counting,
+                                         double overlap_thickness,
+                                         double numerical_precision) : MBI(mbi) {
+
+  GTT = std::unique_ptr<moab::GeomTopoTool>(new moab::GeomTopoTool(MBI,
+                                                                   find_geomsets,
+                                                                   modelRootSet,
+                                                                   p_rootSets_vector,
+                                                                   restore_rootSets));
+}
+
+moab::ErrorCode RayTracingInterface::init(std::string filename)
 {
-
-  closest_enabled_ = closest_enabled;
-
   moab::ErrorCode rval;
 
-  if ("" == filename && NULL == MBI) {
-    return moab::MB_FAILURE;
-  } else if (!MBI) {
-    MBI = std::shared_ptr<moab::Interface>(new moab::Core());
-    rval = MBI->load_file(filename.c_str());
-    MB_CHK_SET_ERR(rval, "Failed to load the specified MOAB file");
-  }
+  rval = MBI->load_file(filename.c_str());
+  MB_CHK_SET_ERR(rval, "Failed to load the specified MOAB file");
 
   g_device = rtcNewDevice(NULL);
 
@@ -154,7 +167,6 @@ moab::ErrorCode RayTracingInterface::init(std::string filename, bool closest_ena
   // set the EH offset
   sceneOffset = *vols.begin();
 
-  GTT = std::unique_ptr<moab::GeomTopoTool>(new moab::GeomTopoTool(MBI.get()));
   // create an Embree geometry instance for each surface
   for (moab::Range::iterator i = vols.begin(); i != vols.end(); i++) {
     moab::EntityHandle vol = *i;
@@ -296,15 +308,22 @@ void RayTracingInterface::buildBVH(moab::EntityHandle vol) {
 
 }
 
-void RayTracingInterface::get_normal(moab::EntityHandle surf, const double loc[3],
-                                     double angle[3], moab::EntityHandle facet) {
-
+moab::ErrorCode
+RayTracingInterface::get_normal(moab::EntityHandle surf,
+                                const double loc[3],
+                                double angle[3],
+                                const moab::GeomQueryTool::RayHistory* history)
+{
   moab::ErrorCode rval;
 
-  if (facet == 0) {
+  if (!history) {
      MB_CHK_SET_ERR_CONT(rval, "Can't get a normal without a history yet");
-     return;
+     return moab::MB_FAILURE;
   }
+
+  moab::EntityHandle facet;
+  rval = history->get_last_intersection(facet);
+  MB_CHK_SET_ERR_CONT(rval, "Failed to get the last intersection from the ray history");
 
   moab::CartVect coords[3];
   const moab::EntityHandle *conn;
@@ -329,6 +348,128 @@ void RayTracingInterface::get_normal(moab::EntityHandle surf, const double loc[3
   angle[0] = normal[0];
   angle[1] = normal[1];
   angle[2] = normal[2];
+
+  return rval;
+}
+
+// sum area of elements in surface
+moab::ErrorCode
+RayTracingInterface::measure_area(moab::EntityHandle surface,
+                                  double& result )
+{
+    // get triangles in surface
+  moab::Range triangles;
+  moab::ErrorCode rval = MBI->get_entities_by_dimension( surface, 2, triangles );
+  MB_CHK_SET_ERR(rval, "Failed to get the surface entities");
+  if (!triangles.all_of_type(MBTRI)) {
+    std::cout << "WARNING: Surface " << surface  // todo: use geomtopotool to get id by entity handle
+              << " contains non-triangle elements. Area calculation may be incorrect."
+              << std::endl;
+    triangles.clear();
+    rval = MBI->get_entities_by_type( surface, MBTRI, triangles );
+    MB_CHK_SET_ERR(rval, "Failed to the surface's triangle entities");
+  }
+
+    // calculate sum of area of triangles
+  result = 0.0;
+  const moab::EntityHandle *conn;
+  int len;
+  moab::CartVect coords[3];
+  for (moab::Range::iterator j = triangles.begin(); j != triangles.end(); ++j) {
+    rval = MBI->get_connectivity( *j, conn, len, true );
+    MB_CHK_SET_ERR(rval, "Failed to get the current triangle's connectivity");
+    if(3 != len) {
+      MB_SET_ERR(MB_FAILURE, "Incorrect connectivity length for triangle");
+    }
+    rval = MBI->get_coords( conn, 3, coords[0].array() );
+    MB_CHK_SET_ERR(rval, "Failed to get the current triangle's vertex coordinates");
+
+    //calculated area using cross product of triangle edges
+    moab::CartVect v1 = coords[1] - coords[0];
+    moab::CartVect v2 = coords[2] - coords[0];
+    moab::CartVect xp = v1 * v2;
+    result += xp.length();
+  }
+  result *= 0.5;
+  return MB_SUCCESS;
+}
+
+moab::ErrorCode
+RayTracingInterface::measure_volume(moab::EntityHandle volume,
+                                    double& result)
+{
+  moab::ErrorCode rval;
+  std::vector<moab::EntityHandle> surfaces;
+  result = 0.0;
+
+   // don't try to calculate volume of implicit complement
+  if (GTT->is_implicit_complement(volume)) {
+    result = 1.0;
+    return MB_SUCCESS;
+  }
+
+    // get surfaces from volume
+  rval = MBI->get_child_meshsets( volume, surfaces );
+  MB_CHK_SET_ERR(rval, "Failed to get the volume's child surfaces");
+
+    // get surface senses
+  std::vector<int> senses( surfaces.size() );
+  rval = GTT->get_surface_senses( volume, surfaces.size(), &surfaces[0], &senses[0] );
+  MB_CHK_SET_ERR(rval, "Failed to retrieve surface-volume sense data. Cannot calculate volume");
+
+  for (unsigned i = 0; i < surfaces.size(); ++i) {
+      // skip non-manifold surfaces
+    if (!senses[i])
+      continue;
+
+      // get triangles in surface
+    moab::Range triangles;
+    rval = MBI->get_entities_by_dimension( surfaces[i], 2, triangles );
+    MB_CHK_SET_ERR(rval, "Failed to get the surface triangles");
+
+    if (!triangles.all_of_type(MBTRI)) {
+      std::cout << "WARNING: Surface " << surfaces[i]  // todo: use geomtopotool to get id by entity handle
+                << " contains non-triangle elements. Volume calculation may be incorrect."
+                << std::endl;
+      triangles.clear();
+      rval = MBI->get_entities_by_type( surfaces[i], MBTRI, triangles );
+      MB_CHK_SET_ERR(rval, "Failed to get the surface triangles");
+    }
+
+      // calculate signed volume beneath surface (x 6.0)
+    double surf_sum = 0.0;
+    const moab::EntityHandle *conn;
+    int len;
+    moab::CartVect coords[3];
+    for (moab::Range::iterator j = triangles.begin(); j != triangles.end(); ++j) {
+      rval = MBI->get_connectivity( *j, conn, len, true );
+      MB_CHK_SET_ERR(rval, "Failed to get the connectivity of the current triangle");
+      if(3 != len) {
+	MB_SET_ERR(MB_FAILURE, "Incorrect connectivity length for triangle");
+      }
+      rval = MBI->get_coords( conn, 3, coords[0].array() );
+      MB_CHK_SET_ERR(rval, "Failed to get the coordinates of the current triangle's vertices");
+
+      coords[1] -= coords[0];
+      coords[2] -= coords[0];
+      surf_sum += (coords[0] % (coords[1] * coords[2]));
+    }
+    result += senses[i] * surf_sum;
+  }
+
+  result /= 6.0;
+  return MB_SUCCESS;
+}
+
+moab::ErrorCode
+RayTracingInterface::closest_to_location(moab::EntityHandle volume,
+                                         const double point[3],
+                                         double & result,
+                                         moab::EntityHandle* closest_surf) {
+
+  closest(volume, point, result, closest_surf, nullptr);
+
+  return moab::MB_SUCCESS;
 }
 
 void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
@@ -389,13 +530,119 @@ void RayTracingInterface::fire(moab::EntityHandle vol, RTCDRayHit &rayhit) {
 
 }
 
-void RayTracingInterface::dag_point_in_volume(const moab::EntityHandle volume,
-                                              const double xyz[3],
-                                              int& result,
-                                              const double *uvw,
-                                              moab::GeomQueryTool::RayHistory *history,
-                                              double overlap_tol,
-                                              moab::EntityHandle imp_comp) {
+
+// point_in_volume_slow, including poly_solid_angle helper subroutine
+// are adapted from "Point in Polyhedron Testing Using Spherical Polygons", Paulo Cezar
+// Pinto Carvalho and Paulo Roma Cavalcanti, _Graphics Gems V_, pg. 42.  Original algorithm
+// was described in "An Efficient Point In Polyhedron Algorithm", Jeff Lane, Bob Magedson,
+// and Mike Rarick, _Computer Vision, Graphics, and Image Processing 26_, pg. 118-225, 1984.
+
+// helper function for point_in_volume_slow.  calculate area of a polygon
+// projected into a unit-sphere space
+moab::ErrorCode RayTracingInterface::poly_solid_angle( moab::EntityHandle face,
+                                                       const moab::CartVect& point,
+                                                       double& area )
+{
+  ErrorCode rval;
+
+    // Get connectivity
+  const moab::EntityHandle* conn;
+  int len;
+  rval = MBI->get_connectivity( face, conn, len, true );
+  MB_CHK_SET_ERR(rval, "Failed to get the connectivity of the polygon");
+
+  // Allocate space to store vertices
+  moab::CartVect coords_static[4];
+  std::vector<CartVect> coords_dynamic;
+  moab::CartVect* coords = coords_static;
+  if ((unsigned)len > (sizeof(coords_static)/sizeof(coords_static[0]))) {
+    coords_dynamic.resize(len);
+    coords = &coords_dynamic[0];
+  }
+
+  // get coordinates
+  rval = MBI->get_coords( conn, len, coords->array() );
+  MB_CHK_SET_ERR(rval, "Failed to get the coordinates of the polygon vertices");
+
+  // calculate normal
+  moab::CartVect norm(0.0), v1, v0 = coords[1] - coords[0];
+  for (int i = 2; i < len; ++i) {
+    v1 = coords[i] - coords[0];
+    norm += v0 * v1;
+    v0 = v1;
+  }
+
+  // calculate area
+  double s, ang;
+  area = 0.0;
+  moab::CartVect r, n1, n2, b, a = coords[len-1] - coords[0];
+  for (int i = 0; i < len; ++i) {
+    r = coords[i] - point;
+    b = coords[(i+1)%len] - coords[i];
+    n1 = a * r; // = norm1 (magnitude is important)
+    n2 = r * b; // = norm2 (magnitude is important)
+    s = (n1 % n2) / (n1.length() * n2.length()); // = cos(angle between norm1,norm2)
+    ang = s <= -1.0 ? M_PI : s >= 1.0 ? 0.0 : acos(s); // = acos(s)
+    s = (b * a) % norm; // =orientation of triangle wrt point
+    area += s > 0.0 ? M_PI - ang : M_PI + ang;
+    a = -b;
+  }
+
+  area -= M_PI * (len - 2);
+  if ((norm % r) > 0)
+    area = -area;
+  return MB_SUCCESS;
+}
+
+moab::ErrorCode
+RayTracingInterface::point_in_volume_slow(moab::EntityHandle volume,
+                                          const double xyz[3],
+                                          int& result)
+{
+  moab::ErrorCode rval;
+  moab::Range faces;
+  std::vector<moab::EntityHandle> surfs;
+  std::vector<int> senses;
+  double sum = 0.0;
+  const moab::CartVect point(xyz);
+
+  rval = MBI->get_child_meshsets( volume, surfs );
+  MB_CHK_SET_ERR(rval, "Failed to get the volume's child surfaces");
+
+  senses.resize( surfs.size() );
+  rval = GTT->get_surface_senses( volume, surfs.size(), &surfs[0], &senses[0] );
+  MB_CHK_SET_ERR(rval, "Failed to get the volume's surface senses");
+
+  for (unsigned i = 0; i < surfs.size(); ++i) {
+    if (!senses[i])  // skip non-manifold surfaces
+      continue;
+
+    double surf_area = 0.0, face_area;
+    faces.clear();
+    rval = MBI->get_entities_by_dimension( surfs[i], 2, faces );
+    MB_CHK_SET_ERR(rval, "Failed to get the surface entities by dimension");
+
+    for (moab::Range::iterator j = faces.begin(); j != faces.end(); ++j) {
+      rval = poly_solid_angle( *j, point, face_area );
+      MB_CHK_SET_ERR(rval, "Failed to determin the polygon's solid angle");
+
+      surf_area += face_area;
+    }
+
+    sum += senses[i] * surf_area;
+  }
+
+  result = fabs(sum) > 2.0*M_PI;
+  return MB_SUCCESS;
+}
+
+moab::ErrorCode RayTracingInterface::point_in_volume(const moab::EntityHandle volume,
+                                                     const double xyz[3],
+                                                     int& result,
+                                                     const double *uvw,
+                                                     const moab::GeomQueryTool::RayHistory *history,
+                                                     double overlap_tol)
+{
   const double huge_val = std::numeric_limits<double>::max();
   double dist_limit = huge_val;
 
@@ -447,6 +694,8 @@ void RayTracingInterface::dag_point_in_volume(const moab::EntityHandle volume,
   else {
     result = 0;
   }
+
+  return moab::MB_SUCCESS;
 
 //   if (overlap_tol != 0.0) {
 //     MBRayAccumulate aray;
@@ -549,7 +798,7 @@ void RayTracingInterface::boundary_case(moab::EntityHandle volume,
 
 }
 
-void RayTracingInterface::test_volume_boundary(const moab::EntityHandle volume,
+moab::ErrorCode RayTracingInterface::test_volume_boundary(const moab::EntityHandle volume,
                                                const moab::EntityHandle surface,
                                                const double xyz[3], const double uvw[3], int& result,
                                                const moab::GeomQueryTool::RayHistory* history) {
@@ -569,16 +818,19 @@ void RayTracingInterface::test_volume_boundary(const moab::EntityHandle volume,
     //  }
 
   result = dir;
+
+  return moab::MB_SUCCESS;
 }
 
-void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
-                                       const double point[3],
-                                       const double dir[3],
-                                       moab::EntityHandle& next_surf,
-                                       double& next_surf_dist,
-                                       moab::GeomQueryTool::RayHistory* history,
-                                       double user_dist_limit,
-                                       int ray_orientation) {
+moab::ErrorCode RayTracingInterface::ray_fire(const moab::EntityHandle volume,
+                                              const double point[3],
+                                              const double dir[3],
+                                              moab::EntityHandle& next_surf,
+                                              double& next_surf_dist,
+                                              moab::GeomQueryTool::RayHistory* history,
+                                              double user_dist_limit,
+                                              int ray_orientation,
+                                              void* dum) {
 
   const double huge_val = std::numeric_limits<double>::max();
   double dist_limit = huge_val;
@@ -598,7 +850,10 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
   mbray.rf_type = RayFireType::RF;
   mbray.orientation = ray_orientation;
   mbray.mask = -1;
-  if (history) { mbray.rh = history; }
+  if (history) {
+    std::cout << "History is valid before: " << history << std::endl;
+    mbray.rh = history;
+  }
 
   MBHit& mbhit = rayhit.hit;
   mbhit.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -661,7 +916,7 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
       nx_vol = vols.front();
     }
     int result = 0;
-    dag_point_in_volume( nx_vol, point, result, dir, history );
+    point_in_volume( nx_vol, point, result, dir, history );
     MB_CHK_SET_ERR_CONT(rval, "Point in volume query failed");
     if (1==result) use_neg_intersection = true;
   }
@@ -679,15 +934,16 @@ void RayTracingInterface::dag_ray_fire(const moab::EntityHandle volume,
     next_surf = 0;
   }
 
-  if(history) {
+  if (history) {
     if(use_neg_intersection) {
       history->add_entity(neg_hit.prim_handle);
     }
     else {
-      history->add_entity(mbhit.prim_handle);
+       history->add_entity(mbhit.prim_handle);
     }
   }
 
+  return MB_SUCCESS;
 }
 
 moab::ErrorCode RayTracingInterface::get_vols(moab::Range& vols) {

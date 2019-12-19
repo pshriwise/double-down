@@ -33,7 +33,6 @@ int main() {
 
   double dist = 0.0;
 
-
   std::cout << "Running closest test" << std::endl;
   RTI->closest(sphere_vol, org, dist);
 

@@ -4,7 +4,7 @@
 
 #include "moab/Range.hpp"
 
-MBDirectAccess::MBDirectAccess(std::shared_ptr<Interface> mbi) : mbi(mbi) {
+MBDirectAccess::MBDirectAccess(Interface* mbi) : mbi(mbi) {
   ErrorCode rval;
 
   Range tris;

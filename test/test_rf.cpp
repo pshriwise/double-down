@@ -34,7 +34,7 @@ int main() {
   double dist = 0.0;
   moab::EntityHandle surf;
 
-  RTI->dag_ray_fire(sphere_vol, org, dir, surf, dist);
+  RTI->ray_fire(sphere_vol, org, dir, surf, dist);
 
   if (dist == 0.0) { return 1; }
   if (surf == 0) { return 1; }
