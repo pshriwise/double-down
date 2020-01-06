@@ -1,8 +1,8 @@
 #include <sstream>
 
-#include "MOABDirectAccess.h"
-
 #include "moab/Range.hpp"
+
+#include "MOABDirectAccess.h"
 
 MBDirectAccess::MBDirectAccess(Interface* mbi) : mbi(mbi) {
   ErrorCode rval;
