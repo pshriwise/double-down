@@ -22,31 +22,48 @@ MBDirectAccess::MBDirectAccess(Interface* mbi) : mbi(mbi) {
     throw std::runtime_error("EntityHandle space is not contiguous");
   }
 
-  // set connectivity pointer, element stride and the number of elements
-  EntityHandle* conntmp;
-  rval = mbi->connect_iterate(tris.begin(), tris.end(), conntmp, element_stride, num_elements);
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get direct access to triangle elements");
-  if (num_elements != (int)tris.size()) {
-    std::stringstream msg;
-    msg << "Incorrect number of elements (" << num_elements << ") added to the direct access manager. Expected " << tris.size() << ".";
-    throw std::out_of_range(msg.str());
+  moab::Range::iterator tris_it = tris.begin();
+  while(tris_it != tris.end()) {
+
+    // set connectivity pointer, element stride and the number of elements
+    EntityHandle* conntmp;
+    rval = mbi->connect_iterate(tris_it, tris.end(), conntmp, element_stride, num_elements);
+    MB_CHK_SET_ERR_CONT(rval, "Failed to get direct access to triangle elements");
+    // if (num_elements != (int)tris.size()) {
+    //   std::stringstream msg;
+    //   msg << "Incorrect number of elements (" << num_elements << ") added to the direct access manager. Expected " << tris.size() << ".";
+    //   throw std::out_of_range(msg.str());
+    // }
+
+    // set const pointers
+    vconn.push_back(conntmp);
+    conn = &(*conntmp);
+
+    first_elements_.push_back({*tris_it, num_elements});
+    first_element = tris.front();
+    tris_it += num_elements;
   }
-  // set const pointers
-  conn = &(*conntmp);
 
-  // set vertex coordinate pointers
-  double * xtmp, * ytmp, * ztmp;
-  rval = mbi->coords_iterate(verts.begin(), verts.end(), xtmp, ytmp, ztmp, num_vertices);
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get direct access to vertex elements");
-  if (num_elements != (int)tris.size()) {
-    std::stringstream msg;
-    msg << "Incorrect number of vertices (" << num_elements << ") added to the direct access manager. Expected " << tris.size() << ".";
-    throw std::out_of_range(msg.str());
+  moab::Range::iterator verts_it = verts.begin();
+  while (verts_it != verts.end()) {
+    // set vertex coordinate pointers
+    double * xtmp, * ytmp, * ztmp;
+    rval = mbi->coords_iterate(verts_it, verts.end(), xtmp, ytmp, ztmp, num_vertices);
+    MB_CHK_SET_ERR_CONT(rval, "Failed to get direct access to vertex elements");
+    // if (num_vertices != (int)verts.size()) {
+    //   std::stringstream msg;
+    //   msg << "Incorrect number of vertices (" << num_vertices << ") added to the direct access manager. Expected " << verts.size() << ".";
+    //   throw std::out_of_range(msg.str());
+    // }
+
+    // set const pointers
+    x = &(*xtmp); y = &(*ytmp); z = &(*ztmp);
+
+    tx.push_back(&(*xtmp));
+    ty.push_back(&(*ytmp));
+    tz.push_back(&(*ztmp));
+
+    verts_it += num_vertices;
   }
-
-  // set const pointers
-  x = &(*xtmp); y = &(*ytmp); z = &(*ztmp);
-
-  first_element = tris.front();
 
 }
