@@ -68,6 +68,7 @@ class RayTracingInterface {
   ~RayTracingInterface() { shutdown(); buffer_storage.clear(); }
 
   // Public Functions
+  moab::ErrorCode load_file(std::string filename);
   moab::ErrorCode init(std::string filename = "");
   void set_offset(moab::Range &vols);
   void create_scene(moab::EntityHandle vol);

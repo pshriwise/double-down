@@ -146,13 +146,23 @@ RayTracingInterface::RayTracingInterface(moab::Interface* mbi,
                                                                    restore_rootSets));
 }
 
+
+moab::ErrorCode RayTracingInterface::load_file(std::string filename) {
+  moab::ErrorCode rval = MBI->load_file(filename.c_str());
+  MB_CHK_SET_ERR(rval, "Failed to load the specified MOAB file: " << filename);
+  return rval;
+}
+
 moab::ErrorCode RayTracingInterface::init(std::string filename)
 {
   moab::ErrorCode rval;
 
-  rval = MBI->load_file(filename.c_str());
-  MB_CHK_SET_ERR(rval, "Failed to load the specified MOAB file");
+  if (filename != "") {
+    rval = load_file(filename);
+    MB_CHK_SET_ERR(rval, "Failed to load file.");
+  }
 
+  // here we assume that the MOAB file is alredy loaded
   g_device = rtcNewDevice(NULL);
 
   rtcSetDeviceErrorFunction(g_device, (RTCErrorFunction)error, NULL);
@@ -163,7 +173,11 @@ moab::ErrorCode RayTracingInterface::init(std::string filename)
   rval = get_vols(vols);
   MB_CHK_SET_ERR(rval, "Failed to get MOAB volumes");
 
-  std::cout << "Found " << vols.size() << " volumes." << std::endl;
+  if (vols.size() == 0) {
+    std::cerr << "No volumes found in the MOAB instance.\n";
+    return moab::MB_SUCCESS;
+  }
+
   // set the EH offset
   sceneOffset = *vols.begin();
 
@@ -851,7 +865,6 @@ moab::ErrorCode RayTracingInterface::ray_fire(const moab::EntityHandle volume,
   mbray.orientation = ray_orientation;
   mbray.mask = -1;
   if (history) {
-    std::cout << "History is valid before: " << history << std::endl;
     mbray.rh = history;
   }
 
