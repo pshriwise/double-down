@@ -16,7 +16,7 @@ class MBDirectAccess {
 public:
   MBDirectAccess(Interface* mbi);
 
-  std::array<Vec3da, 3> get_coords(const EntityHandle& tri) {
+  inline std::array<Vec3da, 3> get_coords(const EntityHandle& tri) {
 
     // determine the correct index to use
     int idx = 0;
@@ -57,7 +57,6 @@ public:
   //   return {v0, v1, v2};
   // }
 
-
 private:
 
   Interface* mbi;
@@ -69,15 +68,10 @@ private:
 
   std::vector<std::pair<EntityHandle, size_t>> first_elements_;
 
-  EntityHandle first_element{0};
-
   std::vector<const EntityHandle*> vconn;
-
-  const EntityHandle *conn;
 
   std::vector<double*> tx, ty, tz;
 
-  const double *x, *y, *z;
 };
 
 #endif // include guard
