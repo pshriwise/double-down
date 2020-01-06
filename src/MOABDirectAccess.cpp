@@ -26,7 +26,7 @@ MBDirectAccess::MBDirectAccess(Interface* mbi) : mbi(mbi) {
 
     // set const pointers
     vconn.push_back(conntmp);
-    first_elements_.push_back({*tris_it, num_elements});
+    first_elements_.push_back({*tris_it, n_elements});
 
     // move iterator forward
     tris_it += n_elements;
