@@ -813,26 +813,30 @@ void RayTracingInterface::boundary_case(moab::EntityHandle volume,
 }
 
 moab::ErrorCode RayTracingInterface::test_volume_boundary(const moab::EntityHandle volume,
-                                               const moab::EntityHandle surface,
-                                               const double xyz[3], const double uvw[3], int& result,
-                                               const moab::GeomQueryTool::RayHistory* history) {
+                                                          const moab::EntityHandle surface,
+                                                          const double xyz[3], const double uvw[3], int& result,
+                                                          const moab::GeomQueryTool::RayHistory* history) {
 
   moab::ErrorCode rval;
   int dir;
 
-  // if (history && history->prev_facets.size()) {
-  //   boundary_case(volume, dir, uvw[0], uvw[1], uvw[2], history->prev_facets.back(), surface);
-  // } else {
+
+  moab::EntityHandle last_facet_hit = 0;
+  if (history) {
+    history->get_last_intersection(last_facet_hit);
+  }
+
+  if (last_facet_hit != 0) {
+    boundary_case(volume, dir, uvw[0], uvw[1], uvw[2], last_facet_hit, surface);
+  } else {
     // find nearest facet
     moab::EntityHandle surf, facet;
     double dist;
     closest(volume, xyz, dist, &surf, &facet);
-
     boundary_case(volume, dir, uvw[0], uvw[1], uvw[2], facet, surface);
-    //  }
+  }
 
   result = dir;
-
   return moab::MB_SUCCESS;
 }
 
@@ -864,9 +868,7 @@ moab::ErrorCode RayTracingInterface::ray_fire(const moab::EntityHandle volume,
   mbray.rf_type = RayFireType::RF;
   mbray.orientation = ray_orientation;
   mbray.mask = -1;
-  if (history) {
-    mbray.rh = history;
-  }
+  if (history) { mbray.rh = history; }
 
   MBHit& mbhit = rayhit.hit;
   mbhit.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -952,7 +954,7 @@ moab::ErrorCode RayTracingInterface::ray_fire(const moab::EntityHandle volume,
       history->add_entity(neg_hit.prim_handle);
     }
     else {
-       history->add_entity(mbhit.prim_handle);
+      history->add_entity(mbhit.prim_handle);
     }
   }
 
