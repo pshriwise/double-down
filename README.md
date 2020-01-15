@@ -1,4 +1,4 @@
-# double-down : A double precision interface to Embree
+#65;5602;1c double-down : A double precision interface to Embree
 
 ## Summary
 
@@ -7,4 +7,4 @@
 
 ## Other Notes
 
-double-down is currently underdevelopment targeting Embree's version 2 interface. This interface will eventually be updated for use with Embree's version 3 interface... someday.
+double-down is currently underdevelopment targeting Embree Version 3.6.1.
