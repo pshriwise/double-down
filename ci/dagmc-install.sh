@@ -16,6 +16,6 @@ mkdir DAGMC && cd DAGMC
 git clone -b $DAGMC_BRANCH $DAGMC_REPO
 mkdir build && cd build
 cmake ../dagmc -DMOAB_DIR=$HOME/MOAB/ -DCMAKE_INSTALL_PREFIX=$HOME/DAGMC/ -DDOUBLE_DOWN=ON -DBUILD_STATIC_LIBS=OFF
-make -j 3
-make -j 3 test; cd ./src/dagmc/tests/; ./dagmc_simple_test
 make -j 3 install
+make -j 3 ; cd ./src/dagmc/tests/; ./dagmc_simple_test
+make -j 3 test
