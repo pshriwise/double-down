@@ -528,7 +528,7 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
 
 void RayTracingInterface::shutdown() {
   for(auto s : scenes) { rtcReleaseScene(s); }
-  rtcReleaseDevice (g_device);
+  if (g_device) { rtcReleaseDevice (g_device); }
 }
 
 void RayTracingInterface::fire(moab::EntityHandle vol, RTCDRayHit &rayhit) {

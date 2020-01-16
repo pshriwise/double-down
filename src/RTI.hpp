@@ -182,7 +182,7 @@ class RayTracingInterface {
   double overlap_thickness {0.0};
 
 
-  RTCDevice g_device;
+  RTCDevice g_device {nullptr};
 };
 
 #endif
