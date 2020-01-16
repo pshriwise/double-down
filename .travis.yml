@@ -1,5 +1,6 @@
+
 sudo: required
-dist: binoic
+dist: xenial
 addons:
   apt:
     packages:
