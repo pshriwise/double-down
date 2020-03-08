@@ -129,24 +129,6 @@ RayTracingInterface::RayTracingInterface(moab::Interface* mbi) : MBI(mbi) {
   GTT = std::unique_ptr<moab::GeomTopoTool>(new moab::GeomTopoTool(MBI));
 }
 
-
-RayTracingInterface::RayTracingInterface(moab::Interface* mbi,
-                                         bool find_geomsets,
-                                         moab::EntityHandle modelRootSet,
-                                         bool p_rootSets_vector,
-                                         bool restore_rootSets,
-                                         bool trace_counting,
-                                         double overlap_thickness,
-                                         double numerical_precision) : MBI(mbi) {
-
-  GTT = std::unique_ptr<moab::GeomTopoTool>(new moab::GeomTopoTool(MBI,
-                                                                   find_geomsets,
-                                                                   modelRootSet,
-                                                                   p_rootSets_vector,
-                                                                   restore_rootSets));
-}
-
-
 moab::ErrorCode RayTracingInterface::load_file(std::string filename) {
   moab::ErrorCode rval = MBI->load_file(filename.c_str());
   MB_CHK_SET_ERR(rval, "Failed to load the specified MOAB file: " << filename);

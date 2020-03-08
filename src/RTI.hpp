@@ -54,15 +54,6 @@ class RayTracingInterface {
   public:
   RayTracingInterface(moab::Interface* mbi);
 
-  RayTracingInterface(moab::Interface* mbi,
-                      bool find_geomsets,
-                      moab::EntityHandle modelRootSet,
-                      bool p_rootSets_vector,
-                      bool restore_rootSets,
-                      bool trace_counting,
-                      double overlap_thickness,
-                      double numerical_precision);
-
   RayTracingInterface() : MBI(nullptr) { }
 
   ~RayTracingInterface() { shutdown(); buffer_storage.clear(); }
