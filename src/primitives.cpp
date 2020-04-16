@@ -59,7 +59,7 @@ void DblTriIntersectFunc(RTCIntersectFunctionNArguments* args) {
   bool hit_tri = plucker_ray_tri_intersect(&(coords[0]), ray_org, ray_dir, dist, ptr);
 
   if ( hit_tri ) {
-    if (hit.geomID != -1 && dist > ray.dtfar) {
+    if (dist > ray.dtfar) {
       hit.geomID = -1;
       return;
     }

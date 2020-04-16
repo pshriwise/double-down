@@ -867,7 +867,7 @@ moab::ErrorCode RayTracingInterface::ray_fire(const moab::EntityHandle volume,
   }
 
   // check behind the ray origin for intersections
-  double neg_ray_len = 1e-03;
+  double neg_ray_len = overlap_thickness;
 
   MBRayHit neg_rayhit;
 
