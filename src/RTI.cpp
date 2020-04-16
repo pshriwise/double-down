@@ -867,8 +867,6 @@ moab::ErrorCode RayTracingInterface::ray_fire(const moab::EntityHandle volume,
   }
 
   // check behind the ray origin for intersections
-  double neg_ray_len = overlap_thickness;
-
   MBRayHit neg_rayhit;
 
   MBRay& neg_ray = neg_rayhit.ray;
@@ -878,14 +876,14 @@ moab::ErrorCode RayTracingInterface::ray_fire(const moab::EntityHandle volume,
   neg_ray.rf_type = RayFireType::RF;
   neg_ray.orientation = -ray_orientation;
   if (history) { neg_ray.rh = history; }
-  neg_ray.set_len(neg_ray_len);
+  neg_ray.set_len(overlap_thickness);
 
   MBHit& neg_hit = neg_rayhit.hit;
   neg_hit.geomID = RTC_INVALID_GEOMETRY_ID;
   neg_hit.primID = RTC_INVALID_GEOMETRY_ID;
 
   // fire ray in negative direction
-  {
+  if (overlap_thickness > 0.0) {
     RTCIntersectContext context;
     rtcInitIntersectContext(&context);
     rtcIntersect1(scene,&context,(RTCRayHit*)&neg_ray);
