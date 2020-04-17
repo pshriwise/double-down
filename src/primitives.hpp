@@ -7,7 +7,6 @@
 #include "moab/CartVect.hpp"
 
 #include "ray.h"
-#include "TriangleIntersectors.h"
 #include "MOABDirectAccess.h"
 
 struct DblTri {

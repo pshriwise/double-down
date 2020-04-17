@@ -95,15 +95,17 @@ void DblTriOccludedFunc(RTCOccludedFunctionNArguments* args) {
 
   MBDirectAccess* mdam = (MBDirectAccess*) mdam;
 
-  std::array<Vec3da, 3> coords = mdam->get_coords(this_tri.handle);
+  std::array<moab::CartVect, 3> coords = mdam->get_mb_coords(this_tri.handle);
 
   double dist;
   double nonneg_ray_len = 1e37;
   double* ptr = &nonneg_ray_len;
-  Vec3da ray_org(ray->dorg);
-  Vec3da ray_dir(ray->ddir);
+  Vec3da& dorg = ray->dorg;
+  moab::CartVect ray_org(dorg[0], dorg[1], dorg[2]);
+  Vec3da& ddir = ray->ddir;
+  moab::CartVect ray_dir(ddir[0], ddir[1], ddir[2]);
 
-  bool hit_tri = plucker_ray_tri_intersect(&(coords[0]), ray_org, ray_dir, dist, ptr);
+  bool hit_tri = moab::GeomUtil::plucker_ray_tri_intersect(&(coords[0]), ray_org, ray_dir, dist, ptr);
   if ( hit_tri ) {
     ray->set_len(neg_inf);
   }
@@ -143,12 +145,12 @@ double DblTriClosestFunc(const DblTri& tri, const double loc[3]) {
 
   MBDirectAccess* mdam = (MBDirectAccess*) tri.mdam;
 
-  std::array<Vec3da, 3> coords = mdam->get_coords(tri.handle);
+  std::array<moab::CartVect, 3> coords = mdam->get_mb_coords(tri.handle);
 
-  Vec3da location(loc);
+  moab::CartVect location(loc[0], loc[1], loc[2]);
 
-  Vec3da result;
-  closest_location_on_tri(location, &(coords[0]), result);
+  moab::CartVect result;
+  moab::GeomUtil::closest_location_on_tri(location, &(coords[0]), result);
 
   return (result - location).length();
 }
