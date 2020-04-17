@@ -1,6 +1,7 @@
 
 #include "primitives.hpp"
-
+#include "moab/GeomUtil.hpp"
+#include "moab/CartVect.hpp"
 
 void intersectionFilter(void* ptr, RTCDRayHit &rayhit)
 {
@@ -43,20 +44,17 @@ void DblTriIntersectFunc(RTCIntersectFunctionNArguments* args) {
   const DblTri* tris = (const DblTri*) tris_i;
   const DblTri& this_tri = tris[item];
 
-  // moab::Interface* mbi = (moab::Interface*) this_tri.moab_instance;
-  // moab::ErrorCode rval;
-
   MBDirectAccess* mdam = (MBDirectAccess*) this_tri.mdam;
 
-  std::array<Vec3da, 3> coords = mdam->get_coords(this_tri.handle);
+  std::array<moab::CartVect, 3> coords = mdam->get_mb_coords(this_tri.handle);
 
   double dist;
   double nonneg_ray_len = 1e17;
   const double* ptr = &nonneg_ray_len;
-  Vec3da ray_org(ray.dorg);
-  Vec3da ray_dir(ray.ddir);
+  moab::CartVect ray_org(ray.dorg.x, ray.dorg.y, ray.dorg.z);
+  moab::CartVect ray_dir(ray.ddir.x, ray.ddir.y, ray.ddir.z);
 
-  bool hit_tri = plucker_ray_tri_intersect(&(coords[0]), ray_org, ray_dir, dist, ptr);
+  bool hit_tri = moab::GeomUtil::plucker_ray_tri_intersect(&(coords[0]), ray_org, ray_dir, dist, ptr);
 
   if ( hit_tri ) {
     if (dist > ray.dtfar) {
@@ -71,7 +69,7 @@ void DblTriIntersectFunc(RTCIntersectFunctionNArguments* args) {
     hit.geomID = this_tri.geomID;
     hit.primID = (unsigned int) item;
 
-    Vec3da normal = cross((coords[1] - coords[0]),(coords[2] - coords[0]));
+    moab::CartVect normal = (coords[1] - coords[0]) * (coords[2] - coords[0]);
     normal.normalize();
 
     if( -1 == this_tri.sense ) normal *= -1;

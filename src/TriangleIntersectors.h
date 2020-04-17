@@ -54,7 +54,7 @@ inline double plucker_edge_test(const Vec3da& vertexa, const Vec3da& vertexb,
   } else {
     const Vec3da edge = vertexa-vertexb;
     const Vec3da edge_normal = cross(edge,vertexb);
-    pip = dot(ray,edge_normal) + dot(ray_normal,edge);
+    pip = dot(ray,edge_normal) + dot(ray_normal,edge); // TODO/FIXME: Something is wrong here for non-debug builds. Causing very small differences in distances returned.
     pip = -pip;
   }
 
