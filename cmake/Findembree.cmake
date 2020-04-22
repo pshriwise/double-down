@@ -16,7 +16,8 @@ message(STATUS "Searching for embree ${EMBREE_VERSION}...")
 find_path(EMBREE_CMAKE_CONFIG NAMES embree-config.cmake
           HINTS ${EMBREE_ROOT}
           PATHS ENV LD_LIBRARY_PATH
-          PATH_SUFFIXES lib Lib cmake cmake/embree-${EMBREE_VERSION}
+          PATHS ${EMBREE_DIR}
+          PATH_SUFFIXES lib Lib cmake cmake/embree-${EMBREE_VERSION} lib/cmake/embree-${EMBREE_VERSION}
           NO_DEFAULT_PATH)
 message(STATUS "Found EMBREE in ${EMBREE_CMAKE_CONFIG}")
 
