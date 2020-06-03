@@ -125,9 +125,9 @@ public:
 
 typedef StackItemT<Node*> StackItem;
 
-RayTracingInterface::RayTracingInterface(moab::Interface* mbi) : MBI(mbi) {
-  GTT = std::unique_ptr<moab::GeomTopoTool>(new moab::GeomTopoTool(MBI));
-}
+RayTracingInterface::RayTracingInterface(moab::Interface *mbi) : GTT(std::make_shared<moab::GeomTopoTool>(mbi)), MBI(mbi) {}
+
+RayTracingInterface::RayTracingInterface(std::shared_ptr<moab::GeomTopoTool> gtt) : GTT(gtt), MBI(GTT->get_moab_instance()) {}
 
 moab::ErrorCode RayTracingInterface::load_file(std::string filename) {
   moab::ErrorCode rval = MBI->load_file(filename.c_str());

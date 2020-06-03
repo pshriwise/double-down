@@ -52,7 +52,9 @@ class RayTracingInterface {
   };
 
   public:
-  RayTracingInterface(moab::Interface* mbi);
+  RayTracingInterface(moab::Interface* MBI);
+
+  RayTracingInterface(std::shared_ptr<moab::GeomTopoTool> GTT);
 
   RayTracingInterface() : MBI(nullptr) { }
 
@@ -158,9 +160,9 @@ class RayTracingInterface {
 
   // Member variables
   private:
+  std::shared_ptr<moab::GeomTopoTool> GTT;
   moab::Interface* MBI;
   std::shared_ptr<MBDirectAccess> mdam;
-  std::unique_ptr<moab::GeomTopoTool> GTT;
   DblTriStorage buffer_storage;
   std::unordered_map<moab::EntityHandle, RTCScene> scene_map;
   std::unordered_map<moab::EntityHandle, std::vector<std::shared_ptr<DblTri>>> tri_ref_storage;
