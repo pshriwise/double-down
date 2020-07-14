@@ -56,9 +56,12 @@ target_link_libraries( dd ${MOAB_LIBRARIES} ${EMBREE_LIBRARY} )
 set_target_properties(dd PROPERTIES INSTALL_RPATH "${MOAB_LIBRARY_DIRS}")
 set_target_properties(dd PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-set_property(TARGET dd APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<INSTALL_INTERFACE:/include>)
-export( TARGETS dd FILE "${DD_CMAKE_CONFIG_LOCATION}/ddTargets.cmake" )
-install( TARGETS dd DESTINATION "${DD_LIBRARY_INSTALL_LOCATION}" )
+install( TARGETS dd
+         EXPORT ddTargets
+         DESTINATION "${DD_LIBRARY_INSTALL_LOCATION}" )
+
+install(EXPORT ddTargets DESTINATION "${DD_CMAKE_CONFIG_LOCATION}")
+export( TARGETS dd FILE "ddTargets.cmake" )
 
 # install headers
 install ( FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/RTI.hpp" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
