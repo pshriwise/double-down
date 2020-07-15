@@ -311,15 +311,50 @@ RayTracingInterface::get_normal(moab::EntityHandle surf,
                                 const moab::GeomQueryTool::RayHistory* history)
 {
   moab::ErrorCode rval;
-
-  if (!history) {
-     MB_CHK_SET_ERR_CONT(rval, "Can't get a normal without a history yet");
-     return moab::MB_FAILURE;
-  }
-
   moab::EntityHandle facet;
-  rval = history->get_last_intersection(facet);
-  MB_CHK_SET_ERR_CONT(rval, "Failed to get the last intersection from the ray history");
+
+  if (history) {
+    rval = history->get_last_intersection(facet);
+    MB_CHK_SET_ERR_CONT(rval, "Failed to get the last intersection from the ray history");
+  } else {
+    // perform a closest location search
+
+    // get the one of the volumes for this surface
+    moab::Range parent_vols;
+    rval = MBI->get_parent_meshsets(surf, parent_vols);
+    MB_CHK_SET_ERR_CONT(rval, "Failed to get parent volumes of the surface");
+    assert(parent_vols.size() != 0);
+
+    moab::EntityHandle vol = parent_vols[0];
+
+    // arbitrarily use one of the parent volumes for the lookup
+    std::pair<int, std::shared_ptr<DblTri>> buffer = buffer_storage.retrieve_buffer(vol);
+
+    RTCDPointQuery point_query;
+    point_query.set_radius(inf);
+    point_query.time = 0.f;
+    point_query.set_point(loc);
+
+    RTCPointQueryContext pq_context;
+    rtcInitPointQueryContext(&pq_context);
+
+    RTCScene scene = scenes[vol-sceneOffset];
+
+    rtcPointQuery(scene, &point_query, &pq_context,
+                  (RTCPointQueryFunction)DblTriPointQueryFunc, (void*)&scene);
+
+    if (point_query.geomID == RTC_INVALID_GEOMETRY_ID) {
+      MB_CHK_SET_ERR(moab::MB_FAILURE, "Failed to locate a nearest point.");
+    }
+
+    const DblTri& this_tri = buffer.second.get()[point_query.primID];
+
+    if (this_tri.surf != surf) {
+      MB_CHK_SET_ERR(moab::MB_FAILURE, "Nearest point was not on the correct surface.");
+    }
+
+    facet = this_tri.handle;
+  }
 
   moab::CartVect coords[3];
   const moab::EntityHandle *conn;
