@@ -19,7 +19,7 @@ jobs:
 
     - name: Install system packages
       shell: bash
-      run: $GITHUB_WORKSPACE/install-apt-pkgs.sh
+      run: $GITHUB_WORKSPACE/ci/install-apt-pkgs.sh
 
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
