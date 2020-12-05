@@ -20,10 +20,12 @@ jobs:
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
 
+    - name: Debug out
+      shell: bash
+      run: ls ${{runner.workspace}} && ls ${{runner.workspace}}/ci
+
     - name: MOAB Build
       shell: bash
-      run: ls ${{runner.workspace}}
-      run: ls ${{runner.workspace}}/ci
       run: ${{runner.workspace}}/ci/moab-install.sh
       
     - name: Embree Build
