@@ -7,6 +7,7 @@ env:
   HDF5_ROOT: /usr
   DDBUILD: $HOME/opt/DD
   DDHOME: $GITHUB_WORKSPACE
+  HOME: ${{runner.workspace}}
   LD_LIBRARY_PATH: $HOME/EMBREE/lib:$HOME/MOAB/lib:$HOME/DAGMC/lib:$HOME/dd/lib
   DISPLAY: 99.0
 
@@ -22,15 +23,15 @@ jobs:
 
     - name: Debug out
       shell: bash
-      run: ls $GITHUB_WORKSPACE
+      run: ls $GITHUB_WORKSPACE/ci
 
     - name: MOAB Build
       shell: bash
-      run: ${{runner.workspace}}/ci/moab-install.sh
+      run: $GITHUB_WORKSPACE/ci/moab-install.sh
       
     - name: Embree Build
       shell: bash
-      run: ${{runner.workspace}}/ci/embree-install.sh
+      run: $GITHUB_WORKSPACE/ci/embree-install.sh
       
     - name: Configure CMake
       # Use a bash shell so we can use the same syntax for environment variable
