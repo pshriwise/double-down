@@ -7,7 +7,6 @@ env:
   HDF5_ROOT: /usr
   DDBUILD: $HOME/opt/DD
   DDHOME: $GITHUB_WORKSPACE
-  HOME: ${{runner.workspace}}
   LD_LIBRARY_PATH: $HOME/EMBREE/lib:$HOME/MOAB/lib:$HOME/DAGMC/lib:$HOME/dd/lib
   DISPLAY: 99.0
 
