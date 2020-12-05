@@ -22,7 +22,7 @@ jobs:
 
     - name: Debug out
       shell: bash
-      run: ls ${{runner.workspace}} && ls ${{runner.workspace}}/ci
+      run: ls $GITHUB_WORKSPACE
 
     - name: MOAB Build
       shell: bash
