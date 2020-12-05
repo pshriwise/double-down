@@ -22,11 +22,11 @@ jobs:
 
     - name: MOAB Build
       shell: bash
-      run: ${{runner.workspace}}/ci/moab_install.sh
+      run: ${{runner.workspace}}/ci/moab-install.sh
       
     - name: Embree Build
       shell: bash
-      run: ${{runner.workspace}}/ci/embree_install.sh
+      run: ${{runner.workspace}}/ci/embree-install.sh
       
     - name: Configure CMake
       # Use a bash shell so we can use the same syntax for environment variable
@@ -53,4 +53,4 @@ jobs:
 
     - name: DAGMC Build and Test
       shell: bash
-      run: ${{runner.workspace}}/ci/dagmc_install.sh
+      run: ${{runner.workspace}}/ci/dagmc-install.sh
