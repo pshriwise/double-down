@@ -22,6 +22,8 @@ jobs:
 
     - name: MOAB Build
       shell: bash
+      run: ls ${{runner.workspace}}
+      run: ls ${{runner.workspace}}/ci
       run: ${{runner.workspace}}/ci/moab-install.sh
       
     - name: Embree Build
