@@ -61,4 +61,4 @@ jobs:
 
     - name: DAGMC Build and Test
       shell: bash
-      run: ${{runner.workspace}}/ci/dagmc-install.sh
+      run: $GITHUB_WORKSPACE/ci/dagmc-install.sh
