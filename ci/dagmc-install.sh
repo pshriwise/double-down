@@ -2,7 +2,7 @@
 set -ex
 
 # DAGMC Variables
-DAGMC_BRANCH='double_down_integration'
+DAGMC_BRANCH='develop'
 DAGMC_REPO='https://github.com/pshriwise/dagmc/'
 DAGMC_INSTALL_DIR=$HOME/DAGMC/
 
