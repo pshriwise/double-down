@@ -2,6 +2,9 @@
 #ifndef DD_RAY_FUNCS_H
 #define DD_RAY_FUNCS_H
 
+// Embree
+#include "embree3/rtcore.h"
+
 // MOAB
 #include "moab/GeomQueryTool.hpp"
 
