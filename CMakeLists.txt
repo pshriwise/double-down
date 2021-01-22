@@ -32,7 +32,7 @@ INCLUDE_DIRECTORIES( ${MOAB_INCLUDE_DIRS} )
 FIND_PACKAGE (embree REQUIRED)
 
 if (NOT ${EMBREE_VERSION} VERSION_GREATER 3.6.1)
-  message(FATAL_ERROR "Double-down requires Embree v3.0 or higher.")
+  message(FATAL_ERROR "Double-down requires Embree v3.6.1 or higher.")
 endif()
 
 # Specify library name - might be necessary due to an issue CMake has with parsing
