@@ -31,7 +31,7 @@ INCLUDE_DIRECTORIES( ${MOAB_INCLUDE_DIRS} )
 # Embree
 FIND_PACKAGE (embree REQUIRED)
 
-if (NOT ${EMBREE_VERSION} VERSION_GREATER 3.0.0)
+if (NOT ${EMBREE_VERSION} VERSION_GREATER 3.6.1)
   message(FATAL_ERROR "Double-down requires Embree v3.0 or higher.")
 endif()
 

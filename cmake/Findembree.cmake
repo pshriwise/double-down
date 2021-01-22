@@ -45,10 +45,6 @@ if (NOT DEFINED EMBREE_VERSION OR "${EMBREE_VERSION}" STREQUAL "..")
   message(FATAL_ERROR "Could not find Embree 3 in the install location: ${EMBREE_DIR}")
 endif()
 
-if (EMBREE_VERSION VERSION_LESS 3.6.1)
-  message(FATAL_ERROR "Double down requires Embree v3.6.1 or higher.")
-endif()
-
 message(STATUS "Searching for embree ${EMBREE_VERSION}...")
 
 find_path(EMBREE_CMAKE_CONFIG NAMES embree-config.cmake
