@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.4)
 project( DBLDOWN )
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -29,7 +29,11 @@ MESSAGE ( STATUS "MOAB_INCLUDE_DIRS is " ${MOAB_INCLUDE_DIRS} )
 INCLUDE_DIRECTORIES( ${MOAB_INCLUDE_DIRS} )
 
 # Embree
-FIND_PACKAGE ( embree 3.6.1 REQUIRED )
+FIND_PACKAGE (embree REQUIRED)
+
+if (NOT ${EMBREE_VERSION} VERSION_GREATER 3.0.0)
+  message(FATAL_ERROR "Double-down requires Embree v3.0 or higher.")
+endif()
 
 # Specify library name - might be necessary due to an issue CMake has with parsing
 # library names (e.g. libembree3.so.3.5.1)
