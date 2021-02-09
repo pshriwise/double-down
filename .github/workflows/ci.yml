@@ -1,6 +1,12 @@
 name: Double Down CI
 
-on: [push]
+on:
+  push:
+    branches:
+    - main
+  pull_request:    
+    branches:
+    - main
 
 env:
   BUILD_TYPE: Release
