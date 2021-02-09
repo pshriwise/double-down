@@ -1,7 +1,6 @@
 set -ex
 
 apt install -y \
-    gfortran \
     mpich \
     libmpich-dev \
     libhdf5-serial-dev \
