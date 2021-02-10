@@ -991,3 +991,7 @@ moab::ErrorCode RayTracingInterface::get_vols(moab::Range& vols) {
 
   return moab::MB_SUCCESS;
 }
+
+bool RayTracingInterface::has_bvh() const {
+  return scene_map.size() > 0;
+}

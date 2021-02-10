@@ -142,6 +142,9 @@ class RayTracingInterface {
   measure_area(moab::EntityHandle surface,
                double& result);
 
+  bool
+  has_bvh() const;
+
   // inline functions
   inline
   moab::GeomTopoTool * gttool() { return GTT.get(); }
