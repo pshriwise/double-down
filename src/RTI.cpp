@@ -244,6 +244,12 @@ moab::ErrorCode RayTracingInterface::init(std::string filename)
   return moab::MB_SUCCESS;
 }
 
+void RayTracingInterface::deleteBVH(moab::EntityHandle vol) {
+  scenes.erase(std::find(scenes.begin(), scenes.end(), scene_map[vol]));
+  rtcReleaseScene(scene_map[vol]);
+  scene_map.erase(vol);
+}
+
 void RayTracingInterface::buildBVH(moab::EntityHandle vol) {
 
   RTCDevice device = rtcNewDevice (NULL);

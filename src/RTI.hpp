@@ -120,6 +120,8 @@ class RayTracingInterface {
 
   void buildBVH(moab::EntityHandle vol);
 
+  void deleteBVH(moab::EntityHandle vol);
+
   moab::ErrorCode
   closest_to_location(moab::EntityHandle volume,
                       const double point[3],
