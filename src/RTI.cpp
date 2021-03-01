@@ -29,6 +29,49 @@ moab::ErrorCode RayTracingInterface::load_file(std::string filename) {
   return rval;
 }
 
+moab::ErrorCode
+RayTracingInterface::get_obb(moab::EntityHandle vol,
+                             std::array<double, 3>& center,
+                             std::array<double, 3>& axis0,
+                             std::array<double, 3>& axis1,
+                             std::array<double, 3>& axis2)
+{
+  std::array<double, 3> llc;
+  std::array<double, 3> urc;
+  moab::ErrorCode rval = get_bbox(vol, llc.data(), urc.data());
+  MB_CHK_SET_ERR(rval, "Failed to get bounding box");
+
+  center[0] = 0.5 * (llc[0] + urc[0]);
+  center[1] = 0.5 * (llc[1] + urc[1]);
+  center[2] = 0.5 * (llc[2] + urc[2]);
+
+  axis0 = {1, 0, 0};
+  axis1 = {0, 1, 0};
+  axis2 = {0, 0, 1};
+
+  return moab::MB_SUCCESS;
+}
+
+moab::ErrorCode
+RayTracingInterface::get_bbox(moab::EntityHandle vol,
+                              double llc[3],
+                              double urc[3])
+{
+  RTCBounds bounds;
+
+  rtcGetSceneBounds(scene_map.at(vol), &bounds);
+
+  llc[0] = bounds.lower_x;
+  llc[1] = bounds.lower_y;
+  llc[2] = bounds.lower_z;
+  urc[0] = bounds.upper_x;
+  urc[1] = bounds.upper_y;
+  urc[2] = bounds.upper_z;
+
+  return moab::MB_SUCCESS;
+}
+
+
 moab::ErrorCode RayTracingInterface::init(std::string filename)
 {
   moab::ErrorCode rval;
@@ -156,7 +199,6 @@ void RayTracingInterface::deleteBVH(moab::EntityHandle vol) {
   scene_map.erase(vol);
   buffer_storage.free_storage(vol);
 }
-
 
 moab::ErrorCode
 RayTracingInterface::get_normal(moab::EntityHandle surf,

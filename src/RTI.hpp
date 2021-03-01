@@ -119,6 +119,16 @@ class RayTracingInterface {
 
   bool point_in_vol(float coordinate[3], float dir[3]);
 
+  moab::ErrorCode get_obb(moab::EntityHandle vol,
+                          std::array<double, 3>& center,
+                          std::array<double, 3>& axis0,
+                          std::array<double, 3>& axis1,
+                          std::array<double, 3>& axis2);
+
+  moab::ErrorCode get_bbox(moab::EntityHandle vol,
+                           double llc[3],
+                           double urc[3]);
+
   moab::ErrorCode get_vols(moab::Range& vols);
   void fire(moab::EntityHandle vol, RTCDRayHit &rayhit);
 
