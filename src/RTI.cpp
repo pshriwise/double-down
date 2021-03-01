@@ -75,7 +75,7 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
   // add new scene to our vector
   RTCScene scene = rtcNewScene(g_device);
   rtcSetSceneFlags(scene, RTC_SCENE_FLAG_ROBUST);
-  rtcSetSceneBuildQuality(scene,RTC_BUILD_QUALITY_HIGH); // EMBREE_FIXME: set proper build quality
+  rtcSetSceneBuildQuality(scene,RTC_BUILD_QUALITY_HIGH);
 
   scenes.push_back(scene);
   scene_map[vol] = scene;
@@ -154,6 +154,7 @@ void RayTracingInterface::deleteBVH(moab::EntityHandle vol) {
   scenes.erase(std::find(scenes.begin(), scenes.end(), scene_map[vol]));
   rtcReleaseScene(scene_map[vol]);
   scene_map.erase(vol);
+  buffer_storage.free_storage(vol);
 }
 
 
@@ -407,7 +408,7 @@ void RayTracingInterface::fire(moab::EntityHandle vol, RTCDRayHit &rayhit) {
     RTCIntersectContext context;
     rtcInitIntersectContext(&context);
     rtcIntersect1(scenes[vol-sceneOffset],&context,(RTCRayHit*)&rayhit);
-    rayhit.hit.Ng_x = -rayhit.hit.Ng_x; // EMBREE_FIXME: only correct for triangles,quads, and subdivision surfaces
+    rayhit.hit.Ng_x = -rayhit.hit.Ng_x;
     rayhit.hit.Ng_y = -rayhit.hit.Ng_y;
     rayhit.hit.Ng_z = -rayhit.hit.Ng_z;
   }
@@ -564,7 +565,7 @@ moab::ErrorCode RayTracingInterface::point_in_volume(const moab::EntityHandle vo
    RTCIntersectContext context;
     rtcInitIntersectContext(&context);
     rtcIntersect1(scene,&context,(RTCRayHit*)&mbrayhit);
-    mbhit.Ng_x = -mbhit.Ng_x; // EMBREE_FIXME: only correct for triangles,quads, and subdivision surfaces
+    mbhit.Ng_x = -mbhit.Ng_x;
     mbhit.Ng_y = -mbhit.Ng_y;
     mbhit.Ng_z = -mbhit.Ng_z;
   }
@@ -625,7 +626,6 @@ moab::ErrorCode RayTracingInterface::point_in_volume(const moab::EntityHandle vo
 
 }
 
-
 void RayTracingInterface::boundary_case(moab::EntityHandle volume,
                                         int& result,
                                         double u,
@@ -663,7 +663,6 @@ void RayTracingInterface::boundary_case(moab::EntityHandle volume,
 
     double sense = dot(uvw, normal);
 
-
     if ( sense < 0.0 ) {
       result = 1;     // inside or entering
     } else  if ( sense > 0.0 ) {
@@ -674,8 +673,6 @@ void RayTracingInterface::boundary_case(moab::EntityHandle volume,
       result = -1;    // failure
       MB_SET_ERR_CONT(moab::MB_FAILURE);
     }
-
-
   } else {
     result = -1;
   }
@@ -689,7 +686,6 @@ moab::ErrorCode RayTracingInterface::test_volume_boundary(const moab::EntityHand
 
   moab::ErrorCode rval;
   int dir;
-
 
   moab::EntityHandle last_facet_hit = 0;
   if (history) {

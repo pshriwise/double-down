@@ -45,6 +45,10 @@ class RayTracingInterface {
       return storage_[vol];
     }
 
+    void free_storage(moab::EntityHandle vol) {
+      if (is_storing(vol)) storage_.erase(vol);
+    }
+
     void clear() {
       storage_.clear();
     }
