@@ -167,81 +167,93 @@ moab::ErrorCode RayTracingInterface::init(std::string filename)
   for (moab::Range::iterator i = vols.begin(); i != vols.end(); i++) {
     moab::EntityHandle vol = *i;
 
-    // add to scenes vec
-    RTCScene scene = rtcNewScene(g_device);
-    rtcSetSceneFlags(scene,RTC_SCENE_FLAG_ROBUST ); // EMBREE_FIXME: set proper scene flags
-    rtcSetSceneBuildQuality(scene,RTC_BUILD_QUALITY_HIGH); // EMBREE_FIXME: set proper build quality
-
-    scenes.push_back(scene);
-    scene_map[vol] = scene;
-
-    // get volume surfaces
-    moab::Range surfs;
-    rval = MBI->get_child_meshsets(vol, surfs);
-    MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces");
-
-    int num_vol_tris = 0;
-    // allocate triangle buffer
-    for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
-      int num_surf_tris;
-      rval = MBI->get_number_entities_by_type(*j, moab::MBTRI, num_surf_tris);
-      MB_CHK_SET_ERR(rval, "Failed to get triangle count");
-      num_vol_tris += num_surf_tris;
-    }
-
-    std::shared_ptr<DblTri> emtris((DblTri*) malloc(num_vol_tris*sizeof(DblTri)));
-
-    buffer_storage.store(vol, num_vol_tris, emtris);
-
-    int buffer_start = 0;
-    for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
-      moab::EntityHandle this_surf = *j;
-      // find the surface sense
-      int sense;
-      rval = GTT->get_sense(this_surf, vol, sense);
-      MB_CHK_SET_ERR(rval, "Failed to get sense for surface");
-
-      // get all triangles on this surface
-      moab::Range tris;
-      rval = MBI->get_entities_by_type(this_surf, moab::MBTRI, tris);
-      MB_CHK_SET_ERR(rval, "Failed to get surface triangles");
-
-      int num_tris = tris.size();
-
-      // create a new geometry for the volume's scene
-      RTCGeometry geom_0 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_USER); // EMBREE_FIXME: check if geometry gets properly committed
-      rtcSetGeometryBuildQuality(geom_0,RTC_BUILD_QUALITY_HIGH);
-      rtcSetGeometryUserPrimitiveCount(geom_0,num_tris);
-      rtcSetGeometryTimeStepCount(geom_0,1);
-      unsigned int emsurf = rtcAttachGeometry(scene,geom_0);
-
-      DblTri* buff_ptr = emtris.get() + buffer_start;
-
-      rtcSetGeometryUserData(geom_0, buff_ptr);
-
-      for (int k = 0; k < num_tris; k++) {
-        buff_ptr[k].mdam = mdam.get();
-        buff_ptr[k].handle = tris[k];
-        buff_ptr[k].surf = this_surf;
-        buff_ptr[k].geomID = emsurf;
-        buff_ptr[k].sense = sense;
-      } // end tris loop
-
-      buffer_start += num_tris;
-
-      rtcSetGeometryBoundsFunction(geom_0,(RTCBoundsFunction)&DblTriBounds, NULL);
-      rtcSetGeometryIntersectFunction (geom_0, (RTCIntersectFunctionN)&MBDblTriIntersectFunc);
-      rtcSetGeometryOccludedFunction (geom_0, (RTCOccludedFunctionN)&DblTriOccludedFunc);
-      // rtcSetGeometryPointQueryFunction(geom_0,(RTCPointQueryFunction)DblTriPointQueryFunc);
-      rtcCommitGeometry(geom_0);
-
-    } // end surface loop
-
-    rtcCommitScene(scene);
+    createBVH(vol);
 
   } // end volume loop
 
   return moab::MB_SUCCESS;
+}
+
+moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
+
+  moab::ErrorCode rval;
+
+  // add new scene to our vector
+  RTCScene scene = rtcNewScene(g_device);
+  rtcSetSceneFlags(scene, RTC_SCENE_FLAG_ROBUST);
+  rtcSetSceneBuildQuality(scene,RTC_BUILD_QUALITY_HIGH); // EMBREE_FIXME: set proper build quality
+
+  scenes.push_back(scene);
+  scene_map[vol] = scene;
+
+  // get volume surfaces
+  moab::Range surfs;
+  rval = MBI->get_child_meshsets(vol, surfs);
+  MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces");
+
+  // allocate triangle buffer
+  int num_vol_tris = 0;
+  for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
+    int num_surf_tris;
+    rval = MBI->get_number_entities_by_type(*j, moab::MBTRI, num_surf_tris);
+    MB_CHK_SET_ERR(rval, "Failed to get triangle count");
+    num_vol_tris += num_surf_tris;
+  }
+
+  // TODO: investigate memory usage here
+  std::shared_ptr<DblTri> emtris((DblTri*) malloc(num_vol_tris*sizeof(DblTri)));
+  buffer_storage.store(vol, num_vol_tris, emtris);
+
+  int buffer_start = 0;
+  for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
+    moab::EntityHandle this_surf = *j;
+    // find the surface sense
+    int sense;
+    rval = GTT->get_sense(this_surf, vol, sense);
+    MB_CHK_SET_ERR(rval, "Failed to get sense for surface");
+
+    // get all triangles on this surface
+    moab::Range tris;
+    rval = MBI->get_entities_by_type(this_surf, moab::MBTRI, tris);
+    MB_CHK_SET_ERR(rval, "Failed to get surface triangles");
+
+    int num_tris = tris.size();
+
+    // create a new geometry for the volume's scene
+    RTCGeometry geom_0 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_USER); // EMBREE_FIXME: check if geometry gets properly committed
+    rtcSetGeometryBuildQuality(geom_0,RTC_BUILD_QUALITY_HIGH);
+    rtcSetGeometryUserPrimitiveCount(geom_0,num_tris);
+    rtcSetGeometryTimeStepCount(geom_0,1);
+    unsigned int emsurf = rtcAttachGeometry(scene,geom_0);
+
+    DblTri* buff_ptr = emtris.get() + buffer_start;
+
+    rtcSetGeometryUserData(geom_0, buff_ptr);
+
+    // set data for this triangle
+    for (int k = 0; k < num_tris; k++) {
+      buff_ptr[k].mdam = mdam.get();
+      buff_ptr[k].handle = tris[k];
+      buff_ptr[k].surf = this_surf;
+      buff_ptr[k].geomID = emsurf;
+      buff_ptr[k].sense = sense;
+    } // end tris loop
+
+    // advance the buffer offset by the number of triangles
+    buffer_start += num_tris;
+
+    rtcSetGeometryBoundsFunction(geom_0,(RTCBoundsFunction)&DblTriBounds, NULL);
+    rtcSetGeometryIntersectFunction (geom_0, (RTCIntersectFunctionN)&MBDblTriIntersectFunc);
+    rtcSetGeometryOccludedFunction (geom_0, (RTCOccludedFunctionN)&DblTriOccludedFunc);
+    // rtcSetGeometryPointQueryFunction(geom_0,(RTCPointQueryFunction)DblTriPointQueryFunc);
+    rtcCommitGeometry(geom_0);
+
+    } // end surface loop
+
+    // commit the scene to the device (ready for use)
+    rtcCommitScene(scene);
+
+    return moab::MB_SUCCESS;
 }
 
 void RayTracingInterface::deleteBVH(moab::EntityHandle vol) {
