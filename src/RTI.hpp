@@ -118,8 +118,6 @@ class RayTracingInterface {
   moab::ErrorCode get_vols(moab::Range& vols);
   void fire(moab::EntityHandle vol, RTCDRayHit &rayhit);
 
-  void buildBVH(moab::EntityHandle vol);
-
   moab::ErrorCode
   createBVH(moab::EntityHandle vol);
 
