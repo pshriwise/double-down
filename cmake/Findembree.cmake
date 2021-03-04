@@ -50,7 +50,7 @@ message(STATUS "Searching for embree ${EMBREE_VERSION}...")
 find_path(EMBREE_CMAKE_CONFIG NAMES embree-config.cmake
   HINTS ${EMBREE_DIR}
   PATHS ENV LD_LIBRARY_PATH
-  PATH_SUFFIXES lib Lib cmake cmake/embree-${EMBREE_VERSION} lib/cmake/embree-${EMBREE_VERSION}
+  PATH_SUFFIXES lib lib64 Lib cmake cmake/embree-${EMBREE_VERSION} lib/cmake/embree-${EMBREE_VERSION} lib64/cmake/embree-${EMBREE_VERSION}
   NO_DEFAULT_PATH)
 
 if (NOT DEFINED EMBREE_CMAKE_CONFIG)

@@ -35,10 +35,6 @@ if (NOT ${EMBREE_VERSION} VERSION_GREATER 3.6.0)
   message(FATAL_ERROR "Double-down requires Embree v3.6.1 or higher.")
 endif()
 
-# Specify library name - might be necessary due to an issue CMake has with parsing
-# library names (e.g. libembree3.so.3.5.1)
-set(EMBREE_LIBRARY "${EMBREE_ROOT_DIR}/lib/libembree${EMBREE_VERSION_MAJOR}.so")
-
 # Set install locations
 set( DD_BINARY_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/bin" )
 set( DD_INCLUDE_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/include" )
