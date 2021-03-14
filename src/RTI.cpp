@@ -156,8 +156,10 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
     if (em_geom_id_map.find(this_surf) != em_geom_id_map.end()) {
         auto geoms = em_geom_map[this_surf];
         auto em_geom = sense == 1 ? geoms.first : geoms.second;
-        if (em_geom) rtcAttachGeometry(scene, em_geom);
-        continue;
+        if (em_geom) {
+          rtcAttachGeometry(scene, em_geom);
+          continue;
+        }
     }
 
     // get all triangles on this surface
