@@ -42,7 +42,7 @@ class RayTracingInterface {
     }
 
     std::pair<int, std::shared_ptr<DblTri>> retrieve_buffer(moab::EntityHandle vol) {
-      return storage_[vol];
+      return storage_.at(vol);
     }
 
     void free_storage(moab::EntityHandle vol) {

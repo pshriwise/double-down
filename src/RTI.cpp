@@ -103,6 +103,25 @@ moab::ErrorCode RayTracingInterface::init(std::string filename)
   // create an Embree geometry instance for each surface
   for (moab::Range::iterator i = vols.begin(); i != vols.end(); i++) {
     moab::EntityHandle vol = *i;
+
+    // get volume surfaces
+    moab::Range surfs;
+    rval = MBI->get_child_meshsets(vol, surfs);
+    MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces");
+
+    // allocate storage for the triangles of each volume
+    int num_vol_tris = 0;
+    for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
+      int num_surf_tris;
+      rval = MBI->get_number_entities_by_type(*j, moab::MBTRI, num_surf_tris);
+      MB_CHK_SET_ERR(rval, "Failed to get triangle count");
+      num_vol_tris += num_surf_tris;
+    }
+
+    // TODO: investigate memory usage here
+    std::shared_ptr<DblTri> emtris((DblTri*) malloc(num_vol_tris*sizeof(DblTri)));
+    buffer_storage.store(vol, num_vol_tris, emtris);
+
     createBVH(vol);
   } // end volume loop
 
@@ -140,23 +159,13 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
   scenes.push_back(scene);
   scene_map[vol] = scene;
 
+  auto tri_buffer = buffer_storage.retrieve_buffer(vol);
+  auto emtris = tri_buffer.second;
+
   // get volume surfaces
   moab::Range surfs;
   rval = MBI->get_child_meshsets(vol, surfs);
   MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces");
-
-  // allocate triangle buffer
-  int num_vol_tris = 0;
-  for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
-    int num_surf_tris;
-    rval = MBI->get_number_entities_by_type(*j, moab::MBTRI, num_surf_tris);
-    MB_CHK_SET_ERR(rval, "Failed to get triangle count");
-    num_vol_tris += num_surf_tris;
-  }
-
-  // TODO: investigate memory usage here
-  std::shared_ptr<DblTri> emtris((DblTri*) malloc(num_vol_tris*sizeof(DblTri)));
-  buffer_storage.store(vol, num_vol_tris, emtris);
 
   int buffer_start = 0;
   for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
@@ -231,6 +240,8 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
 
     } // end surface loop
 
+    //////////////////////////////////////////////////////////////////////////////////////////////
+
     // commit the scene to the device (ready for use)
     rtcCommitScene(scene);
 
@@ -250,7 +261,6 @@ void RayTracingInterface::deleteBVH(moab::EntityHandle ent) {
       scenes.erase(std::find(scenes.begin(), scenes.end(), scene_map[ent]));
       rtcReleaseScene(scene_map[ent]);
       scene_map.erase(ent);
-      buffer_storage.free_storage(ent);
 
       break;
 
@@ -362,7 +372,7 @@ RayTracingInterface::get_normal(moab::EntityHandle surf,
 // sum area of elements in surface
 moab::ErrorCode
 RayTracingInterface::measure_area(moab::EntityHandle surface,
-                                  double& result )
+                                  double& result)
 {
     // get triangles in surface
   moab::Range triangles;
