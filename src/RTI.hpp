@@ -133,6 +133,12 @@ class RayTracingInterface {
   void fire(moab::EntityHandle vol, RTCDRayHit &rayhit);
 
   moab::ErrorCode
+  createVolumeBVH(moab::EntityHandle vol);
+
+  moab::ErrorCode
+  createSurfaceBVH(moab::EntityHandle surf);
+
+  moab::ErrorCode
   createBVH(moab::EntityHandle vol);
 
   void
@@ -188,7 +194,7 @@ class RayTracingInterface {
   std::unordered_map<moab::EntityHandle, std::pair<unsigned int, unsigned int>> em_geom_id_map;
   std::unordered_map<moab::EntityHandle, std::pair<RTCGeometry, RTCGeometry>> em_geom_map;
   std::unordered_map<moab::EntityHandle, RTCScene> scene_map;
-  std::unordered_map<moab::EntityHandle, std::vector<std::shared_ptr<DblTri>>> tri_ref_storage;
+
   std::vector<RTCScene> scenes;
   moab::EntityHandle sceneOffset;
   std::unordered_map<moab::EntityHandle, Node*> root_map;
@@ -196,7 +202,6 @@ class RayTracingInterface {
   // a couple values we never touch really
   double numerical_precision {1E-3};
   double overlap_thickness {0.0};
-
 
   RTCDevice g_device {nullptr};
 };

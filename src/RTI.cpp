@@ -103,12 +103,29 @@ moab::ErrorCode RayTracingInterface::init(std::string filename)
   // create an Embree geometry instance for each surface
   for (moab::Range::iterator i = vols.begin(); i != vols.end(); i++) {
     moab::EntityHandle vol = *i;
-
     createBVH(vol);
-
   } // end volume loop
 
   return moab::MB_SUCCESS;
+}
+
+moab::ErrorCode
+RayTracingInterface::createVolumeBVH(moab::EntityHandle vol) {
+
+  moab::ErrorCode rval;
+
+
+  return moab::MB_SUCCESS;
+}
+
+
+moab::ErrorCode
+RayTracingInterface::createSurfaceBVH(moab::EntityHandle surf) {
+
+  moab::ErrorCode rval;
+
+
+  return MB_SUCCESS;
 }
 
 moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
@@ -187,7 +204,7 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
     }
 
     rtcSetGeometryBuildQuality(geom_0,RTC_BUILD_QUALITY_HIGH);
-    rtcSetGeometryUserPrimitiveCount(geom_0,num_tris);
+    rtcSetGeometryUserPrimitiveCount(geom_0, num_tris);
     rtcSetGeometryTimeStepCount(geom_0,1);
 
     DblTri* buff_ptr = emtris.get() + buffer_start;
