@@ -144,10 +144,21 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
   int buffer_start = 0;
   for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
     moab::EntityHandle this_surf = *j;
+
     // find the surface sense
     int sense;
     rval = GTT->get_sense(this_surf, vol, sense);
     MB_CHK_SET_ERR(rval, "Failed to get sense for surface");
+
+
+    // if the forward and reverse geometries for this surface
+    // have already been created, ensure they're enabled and move on
+    if (em_geom_id_map.find(this_surf) != em_geom_id_map.end()) {
+        auto geoms = em_geom_map[this_surf];
+        auto em_geom = sense == 1 ? geoms.first : geoms.second;
+        if (em_geom) rtcAttachGeometry(scene, em_geom);
+        continue;
+    }
 
     // get all triangles on this surface
     moab::Range tris;
@@ -158,10 +169,24 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
 
     // create a new geometry for the volume's scene
     RTCGeometry geom_0 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_USER); // EMBREE_FIXME: check if geometry gets properly committed
+    unsigned int emsurf = rtcAttachGeometry(scene, geom_0);
+
+    if (em_geom_id_map.find(this_surf) == em_geom_id_map.end()) {
+      em_geom_id_map[this_surf] = {-1, -1};
+      em_geom_map[this_surf] = {nullptr, nullptr};
+    }
+
+    if (sense == 1) {
+      em_geom_id_map[this_surf].first = emsurf;
+      em_geom_map[this_surf].first = geom_0;
+    } else {
+      em_geom_id_map[this_surf].second = emsurf;
+      em_geom_map[this_surf].second = geom_0;
+    }
+
     rtcSetGeometryBuildQuality(geom_0,RTC_BUILD_QUALITY_HIGH);
     rtcSetGeometryUserPrimitiveCount(geom_0,num_tris);
     rtcSetGeometryTimeStepCount(geom_0,1);
-    unsigned int emsurf = rtcAttachGeometry(scene,geom_0);
 
     DblTri* buff_ptr = emtris.get() + buffer_start;
 
@@ -193,11 +218,47 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
     return moab::MB_SUCCESS;
 }
 
-void RayTracingInterface::deleteBVH(moab::EntityHandle vol) {
-  scenes.erase(std::find(scenes.begin(), scenes.end(), scene_map[vol]));
-  rtcReleaseScene(scene_map[vol]);
-  scene_map.erase(vol);
-  buffer_storage.free_storage(vol);
+void RayTracingInterface::deleteBVH(moab::EntityHandle ent) {
+
+  int ent_dim = GTT->dimension(ent);
+  moab::Range surfs;
+
+  switch(ent_dim) {
+    case 3:
+      MBI->get_child_meshsets(ent, surfs);
+      for (const auto& surf : surfs) { deleteBVH(surf); }
+
+      scenes.erase(std::find(scenes.begin(), scenes.end(), scene_map[ent]));
+      rtcReleaseScene(scene_map[ent]);
+      scene_map.erase(ent);
+      buffer_storage.free_storage(ent);
+
+      break;
+
+    case 2:
+      moab::EntityHandle fwd_vol, rev_vol;
+      GTT->get_surface_senses(ent, fwd_vol, rev_vol);
+      auto& geoms = em_geom_id_map.at(ent);
+
+      // handle the forward scene
+      auto fwd_scene = scene_map[fwd_vol];
+      if (fwd_scene) {
+        rtcDetachGeometry(fwd_scene, geoms.first);
+        rtcReleaseGeometry(rtcGetGeometry(fwd_scene, geoms.first));
+        rtcCommitScene(fwd_scene);
+      }
+
+      // handle the reverse scene
+      auto rev_scene = scene_map[rev_vol];
+      if (rev_scene) {
+        rtcDetachGeometry(rev_scene, geoms.second);
+        rtcReleaseGeometry(rtcGetGeometry(rev_scene, geoms.second));
+        rtcCommitScene(rev_scene);
+      }
+
+      em_geom_id_map.erase(ent);
+      em_geom_map.erase(ent);
+  }
 }
 
 moab::ErrorCode

@@ -185,6 +185,8 @@ class RayTracingInterface {
   moab::Interface* MBI;
   std::shared_ptr<MBDirectAccess> mdam;
   DblTriStorage buffer_storage;
+  std::unordered_map<moab::EntityHandle, std::pair<unsigned int, unsigned int>> em_geom_id_map;
+  std::unordered_map<moab::EntityHandle, std::pair<RTCGeometry, RTCGeometry>> em_geom_map;
   std::unordered_map<moab::EntityHandle, RTCScene> scene_map;
   std::unordered_map<moab::EntityHandle, std::vector<std::shared_ptr<DblTri>>> tri_ref_storage;
   std::vector<RTCScene> scenes;

@@ -39,6 +39,7 @@ int main() {
   if (dist == 0.0) { return 1; }
   if (surf == 0) { return 1; }
 
+
   // tear down the BVH for this volume
   RTI->deleteBVH(sphere_vol);
 
@@ -46,6 +47,27 @@ int main() {
   RTI->createBVH(sphere_vol);
 
   // ray fire again to make sure this works
+  surf = 0;
+  RTI->ray_fire(sphere_vol, org, dir, surf, dist);
+
+  if (dist == 0.0) { return 1; }
+  if (surf == 0) { return 1; }
+
+  // delete the surface tree
+  RTI->deleteBVH(surf);
+
+  // ray fire again, expect to hit nothing
+  surf = 0;
+  RTI->ray_fire(sphere_vol, org, dir, surf, dist);
+
+  if (dist < 1000.0) { return 1; }
+  if (surf != 0) { return 1; }
+
+  // rebuild the BVH for this volume
+  RTI->createBVH(sphere_vol);
+
+  // ray fire again to make sure this works
+  surf = 0;
   RTI->ray_fire(sphere_vol, org, dir, surf, dist);
 
   if (dist == 0.0) { return 1; }
