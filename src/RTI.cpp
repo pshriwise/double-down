@@ -128,8 +128,8 @@ RayTracingInterface::allocateTriangleBuffer(moab::EntityHandle vol) {
   }
 
   // TODO: investigate memory usage here
-  std::shared_ptr<DblTri> emtris((DblTri*) malloc(num_vol_tris*sizeof(DblTri)));
-  buffer_storage.store(vol, num_vol_tris, emtris);
+  std::vector<DblTri> emtris(num_vol_tris);
+  buffer_storage.store(vol, std::move(emtris));
 
   return MB_SUCCESS;
 }
@@ -165,8 +165,8 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
   scenes.push_back(scene);
   scene_map[vol] = scene;
 
-  auto tri_buffer = buffer_storage.retrieve_buffer(vol);
-  auto emtris = tri_buffer.second;
+  auto& tri_buffer = buffer_storage.retrieve_buffer(vol);
+  auto emtris = tri_buffer.data();
 
   // get volume surfaces
   moab::Range surfs;
@@ -222,7 +222,7 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
     rtcSetGeometryUserPrimitiveCount(geom_0, num_tris);
     rtcSetGeometryTimeStepCount(geom_0,1);
 
-    DblTri* buff_ptr = emtris.get() + buffer_start;
+    DblTri* buff_ptr = emtris + buffer_start;
 
     rtcSetGeometryUserData(geom_0, buff_ptr);
 
@@ -320,7 +320,7 @@ RayTracingInterface::get_normal(moab::EntityHandle surf,
     moab::EntityHandle vol = parent_vols[0];
 
     // arbitrarily use one of the parent volumes for the lookup
-    std::pair<int, std::shared_ptr<DblTri>> buffer = buffer_storage.retrieve_buffer(vol);
+    const std::vector<DblTri>& buffer = buffer_storage.retrieve_buffer(vol);
 
     RTCDPointQuery point_query;
     point_query.set_radius(inf);
@@ -339,7 +339,7 @@ RayTracingInterface::get_normal(moab::EntityHandle surf,
       MB_CHK_SET_ERR(moab::MB_FAILURE, "Failed to locate a nearest point.");
     }
 
-    const DblTri& this_tri = buffer.second.get()[point_query.primID];
+    const DblTri& this_tri = buffer.at(point_query.primID);
 
     if (this_tri.surf != surf) {
       MB_CHK_SET_ERR(moab::MB_FAILURE, "Nearest point was not on the correct surface.");
@@ -499,7 +499,7 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
                                   double &result, moab::EntityHandle* surface,
                                   moab::EntityHandle* facet) {
 
-  std::pair<int, std::shared_ptr<DblTri>> buffer = buffer_storage.retrieve_buffer(vol);
+  const std::vector<DblTri>& buffer = buffer_storage.retrieve_buffer(vol);
 
   RTCDPointQuery point_query;
   point_query.set_radius(inf);
@@ -523,7 +523,7 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
   }
 
   result = point_query.dradius;
-  const DblTri& this_tri = buffer.second.get()[point_query.primID];
+  const DblTri& this_tri = buffer.at(point_query.primID);
   if (surface) {
     *surface = this_tri.surf;
   }

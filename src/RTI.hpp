@@ -20,28 +20,21 @@ class Node;
 class RayTracingInterface {
 
   class DblTriStorage {
-  private:
-    std::unordered_map<moab::EntityHandle, std::pair<int, std::shared_ptr<DblTri>>> storage_;
-
   public:
     bool is_storing(moab::EntityHandle vol) {
-      return storage_.count(vol);
+      return storage_.find(vol) != storage_.end();
     }
 
-    bool is_storing(std::shared_ptr<DblTri> ptr) {
-      for (auto it : storage_) {
-        if (it.second.second == ptr) return true;
-      }
-      return false;
+    void store(moab::EntityHandle vol, std::vector<DblTri>&& buffer) {
+      if (storage_.find(vol) != storage_.end()) { return; }
+      storage_[vol] = buffer;
     }
 
-    void store(moab::EntityHandle vol, int size, std::shared_ptr<DblTri> ptr) {
-      if (!is_storing(ptr)) {
-        storage_[vol] = {size, ptr};
-      }
+    std::vector<DblTri>& retrieve_buffer(moab::EntityHandle vol) {
+      return storage_.at(vol);
     }
 
-    std::pair<int, std::shared_ptr<DblTri>> retrieve_buffer(moab::EntityHandle vol) {
+    const std::vector<DblTri>& retrieve_buffer(moab::EntityHandle vol) const {
       return storage_.at(vol);
     }
 
@@ -52,6 +45,9 @@ class RayTracingInterface {
     void clear() {
       storage_.clear();
     }
+
+  private:
+    std::unordered_map<moab::EntityHandle, std::vector<DblTri>> storage_;
 
   };
 
