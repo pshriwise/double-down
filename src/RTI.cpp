@@ -101,31 +101,37 @@ moab::ErrorCode RayTracingInterface::init(std::string filename)
   sceneOffset = *vols.begin();
 
   // create an Embree geometry instance for each surface
-  for (moab::Range::iterator i = vols.begin(); i != vols.end(); i++) {
-    moab::EntityHandle vol = *i;
-
-    // get volume surfaces
-    moab::Range surfs;
-    rval = MBI->get_child_meshsets(vol, surfs);
-    MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces");
-
-    // allocate storage for the triangles of each volume
-    int num_vol_tris = 0;
-    for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
-      int num_surf_tris;
-      rval = MBI->get_number_entities_by_type(*j, moab::MBTRI, num_surf_tris);
-      MB_CHK_SET_ERR(rval, "Failed to get triangle count");
-      num_vol_tris += num_surf_tris;
-    }
-
-    // TODO: investigate memory usage here
-    std::shared_ptr<DblTri> emtris((DblTri*) malloc(num_vol_tris*sizeof(DblTri)));
-    buffer_storage.store(vol, num_vol_tris, emtris);
-
+  for (auto vol : vols) {
+    allocateTriangleBuffer(vol);
     createBVH(vol);
   } // end volume loop
 
   return moab::MB_SUCCESS;
+}
+
+moab::ErrorCode
+RayTracingInterface::allocateTriangleBuffer(moab::EntityHandle vol) {
+  moab::ErrorCode rval;
+
+  // get volume surfaces
+  moab::Range surfs;
+  rval = MBI->get_child_meshsets(vol, surfs);
+  MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces");
+
+  // allocate storage for the triangles of each volume
+  int num_vol_tris = 0;
+  for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
+    int num_surf_tris;
+    rval = MBI->get_number_entities_by_type(*j, moab::MBTRI, num_surf_tris);
+    MB_CHK_SET_ERR(rval, "Failed to get triangle count");
+    num_vol_tris += num_surf_tris;
+  }
+
+  // TODO: investigate memory usage here
+  std::shared_ptr<DblTri> emtris((DblTri*) malloc(num_vol_tris*sizeof(DblTri)));
+  buffer_storage.store(vol, num_vol_tris, emtris);
+
+  return MB_SUCCESS;
 }
 
 moab::ErrorCode
