@@ -134,25 +134,6 @@ RayTracingInterface::allocateTriangleBuffer(moab::EntityHandle vol) {
   return MB_SUCCESS;
 }
 
-moab::ErrorCode
-RayTracingInterface::createVolumeBVH(moab::EntityHandle vol) {
-
-  moab::ErrorCode rval;
-
-
-  return moab::MB_SUCCESS;
-}
-
-
-moab::ErrorCode
-RayTracingInterface::createSurfaceBVH(moab::EntityHandle surf) {
-
-  moab::ErrorCode rval;
-
-
-  return MB_SUCCESS;
-}
-
 moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
 
   if (GTT->dimension(vol) != 3) {
