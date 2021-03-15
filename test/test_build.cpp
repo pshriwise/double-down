@@ -1,10 +1,7 @@
-
-
 #include <iostream>
 
 #include "RTI.hpp"
 #include "test_utils.hpp"
-
 
 int main() {
   // create new MOAB instance
@@ -43,6 +40,32 @@ int main() {
 
   // rebuild the BVH for this volume
   RTI->createBVH(sphere_vol);
+
+  // ray fire again to make sure this works
+  surf = 0;
+  RTI->ray_fire(sphere_vol, org, dir, surf, dist);
+
+  if (dist == 0.0) { return 1; }
+  if (surf == 0) { return 1; }
+
+  // clear the MDAM
+  auto MDAM = RTI->direct_access_manager();
+  MDAM->clear();
+
+  if (MDAM->n_elements() > 0) { return 1; }
+
+  MDAM->setup();
+
+  if (MDAM->n_elements() <= 0) { return 1; }
+
+  // ray fire again to make sure this works
+  surf = 0;
+  RTI->ray_fire(sphere_vol, org, dir, surf, dist);
+
+  if (dist == 0.0) { return 1; }
+  if (surf == 0) { return 1; }
+
+  MDAM->update();
 
   // ray fire again to make sure this works
   surf = 0;
