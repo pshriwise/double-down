@@ -17,6 +17,15 @@ class MBDirectAccess {
 public:
   MBDirectAccess(Interface* mbi);
 
+  //! \brief Initialize internal structures
+  void setup();
+
+  //! \brief Reset internal data structures, but maintain MOAB isntance
+  void clear();
+
+  //! \brief Update internal data structures to account for changes in the MOAB instance
+  void update();
+
   inline std::array<moab::CartVect, 3> get_mb_coords(const EntityHandle& tri) {
 
     // determine the correct index to use
@@ -28,15 +37,14 @@ public:
       fe = first_elements_[idx];
     }
 
-    size_t conn_idx = element_stride * (tri - fe.first);
-    size_t i0 = vconn[idx][conn_idx] - 1;
-    size_t i1 = vconn[idx][conn_idx + 1] - 1;
-    size_t i2 = vconn[idx][conn_idx + 2] - 1;
+    size_t conn_idx = element_stride_ * (tri - fe.first);
+    size_t i0 = vconn_[idx][conn_idx] - 1;
+    size_t i1 = vconn_[idx][conn_idx + 1] - 1;
+    size_t i2 = vconn_[idx][conn_idx + 2] - 1;
 
-
-    moab::CartVect v0(tx[idx][i0], ty[idx][i0], tz[idx][i0]);
-    moab::CartVect v1(tx[idx][i1], ty[idx][i1], tz[idx][i1]);
-    moab::CartVect v2(tx[idx][i2], ty[idx][i2], tz[idx][i2]);
+    moab::CartVect v0(tx_[idx][i0], ty_[idx][i0], tz_[idx][i0]);
+    moab::CartVect v1(tx_[idx][i1], ty_[idx][i1], tz_[idx][i1]);
+    moab::CartVect v2(tx_[idx][i2], ty_[idx][i2], tz_[idx][i2]);
 
     return {v0, v1, v2};
   }
@@ -52,51 +60,36 @@ public:
       fe = first_elements_[idx];
     }
 
-    size_t conn_idx = element_stride * (tri - fe.first);
-    size_t i0 = vconn[idx][conn_idx] - 1;
-    size_t i1 = vconn[idx][conn_idx + 1] - 1;
-    size_t i2 = vconn[idx][conn_idx + 2] - 1;
+    size_t conn_idx = element_stride_ * (tri - fe.first);
+    size_t i0 = vconn_[idx][conn_idx] - 1;
+    size_t i1 = vconn_[idx][conn_idx + 1] - 1;
+    size_t i2 = vconn_[idx][conn_idx + 2] - 1;
 
-
-    Vec3da v0(tx[idx][i0], ty[idx][i0], tz[idx][i0]);
-    Vec3da v1(tx[idx][i1], ty[idx][i1], tz[idx][i1]);
-    Vec3da v2(tx[idx][i2], ty[idx][i2], tz[idx][i2]);
+    Vec3da v0(tx_[idx][i0], ty_[idx][i0], tz_[idx][i0]);
+    Vec3da v1(tx_[idx][i1], ty_[idx][i1], tz_[idx][i1]);
+    Vec3da v2(tx_[idx][i2], ty_[idx][i2], tz_[idx][i2]);
 
     return {v0, v1, v2};
   }
 
-  /* OLD get_coords IMPLEMENTATION - ASSUMES ONE CONTIGUOUS BLOCK OF MEMORY */
-
-  // std::array<Vec3da, 3> get_coords(const EntityHandle& tri) {
-
-  //   size_t conn_idx = element_stride * (tri - first_element);
-  //   size_t i0 = conn[conn_idx] - 1;
-  //   size_t i1 = conn[conn_idx + 1] - 1;
-  //   size_t i2 = conn[conn_idx + 2] - 1;
-
-
-  //   Vec3da v0(x[i0], y[i0], z[i0]);
-  //   Vec3da v1(x[i1], y[i1], z[i1]);
-  //   Vec3da v2(x[i2], y[i2], z[i2]);
-
-  //   return {v0, v1, v2};
-  // }
+  // Accessors
+  inline int n_elements() { return num_elements_; }
+  inline int n_vertices() { return num_vertices_; }
+  inline int stride() { return element_stride_;}
 
 private:
+  Interface* mbi {nullptr};
 
-  Interface* mbi;
+  int num_elements_ {-1};
+  int num_vertices_ {-1};
 
-  int num_elements {-1};
-  int num_vertices {-1};
-
-  int element_stride {-1};
+  int element_stride_ {-1};
 
   std::vector<std::pair<EntityHandle, size_t>> first_elements_;
 
-  std::vector<const EntityHandle*> vconn;
+  std::vector<const EntityHandle*> vconn_;
 
-  std::vector<double*> tx, ty, tz;
-
+  std::vector<double*> tx_, ty_, tz_;
 };
 
 #endif // include guard

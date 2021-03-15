@@ -185,6 +185,8 @@ class RayTracingInterface {
   inline
   void set_overlap_thickness(double val) { overlap_thickness = val; }
 
+  inline std::shared_ptr<MBDirectAccess> direct_access_manager() { return mdam; }
+
   // Member variables
   private:
   std::shared_ptr<moab::GeomTopoTool> GTT;

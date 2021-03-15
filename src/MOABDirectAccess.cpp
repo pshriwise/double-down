@@ -4,14 +4,20 @@
 
 #include "MOABDirectAccess.h"
 
-MBDirectAccess::MBDirectAccess(Interface* mbi) : mbi(mbi) {
+MBDirectAccess::MBDirectAccess(Interface* mbi) : mbi(mbi)
+{
+  setup();
+}
+
+void
+MBDirectAccess::setup() {
   ErrorCode rval;
 
   // setup triangles
   Range tris;
   rval = mbi->get_entities_by_dimension(0, 2, tris, true);
   MB_CHK_SET_ERR_CONT(rval, "Failed to get all elements of dimension 2 (tris)");
-  num_elements = tris.size();
+  num_elements_ = tris.size();
 
   // only supporting triangle elements for now
   if (!tris.all_of_type(MBTRI)) { throw std::runtime_error("Not all 2D elements are triangles"); }
@@ -21,11 +27,11 @@ MBDirectAccess::MBDirectAccess(Interface* mbi) : mbi(mbi) {
     // set connectivity pointer, element stride and the number of elements
     EntityHandle* conntmp;
     int n_elements;
-    rval = mbi->connect_iterate(tris_it, tris.end(), conntmp, element_stride, n_elements);
+    rval = mbi->connect_iterate(tris_it, tris.end(), conntmp, element_stride_, n_elements);
     MB_CHK_SET_ERR_CONT(rval, "Failed to get direct access to triangle elements");
 
     // set const pointers
-    vconn.push_back(conntmp);
+    vconn_.push_back(conntmp);
     first_elements_.push_back({*tris_it, n_elements});
 
     // move iterator forward
@@ -36,7 +42,7 @@ MBDirectAccess::MBDirectAccess(Interface* mbi) : mbi(mbi) {
   Range verts;
   rval = mbi->get_entities_by_dimension(0, 0, verts, true);
   MB_CHK_SET_ERR_CONT(rval, "Failed to get all elements of dimension 0 (vertices)");
-  num_vertices = verts.size();
+  num_vertices_ = verts.size();
 
   moab::Range::iterator verts_it = verts.begin();
   while (verts_it != verts.end()) {
@@ -46,12 +52,31 @@ MBDirectAccess::MBDirectAccess(Interface* mbi) : mbi(mbi) {
     rval = mbi->coords_iterate(verts_it, verts.end(), xtmp, ytmp, ztmp, n_vertices);
     MB_CHK_SET_ERR_CONT(rval, "Failed to get direct access to vertex elements");
 
-    tx.push_back(&(*xtmp));
-    ty.push_back(&(*ytmp));
-    tz.push_back(&(*ztmp));
+    tx_.push_back(&(*xtmp));
+    ty_.push_back(&(*ytmp));
+    tz_.push_back(&(*ztmp));
 
     // move iterator forward
     verts_it += n_vertices;
   }
+}
 
+void
+MBDirectAccess::clear()
+{
+  num_elements_ = -1;
+  num_vertices_ = -1;
+  element_stride_ = -1;
+
+  first_elements_.clear();
+  vconn_.clear();
+  tx_.clear();
+  ty_.clear();
+  tz_.clear();
+}
+
+void
+MBDirectAccess::update() {
+  clear();
+  setup();
 }
