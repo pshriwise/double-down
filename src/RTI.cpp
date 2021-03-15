@@ -143,6 +143,9 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
 
   moab::ErrorCode rval;
 
+  // add buffer storage if it isn't already there
+  if (!buffer_storage.is_storing(vol)) { allocateTriangleBuffer(vol); }
+
   // add new scene to our vector
   RTCScene scene = rtcNewScene(g_device);
   rtcSetSceneFlags(scene, RTC_SCENE_FLAG_ROBUST);
@@ -168,18 +171,6 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
     rval = GTT->get_sense(this_surf, vol, sense);
     MB_CHK_SET_ERR(rval, "Failed to get sense for surface");
 
-
-    // if the forward and reverse geometries for this surface
-    // have already been created, ensure they're enabled and move on
-    if (em_geom_id_map.find(this_surf) != em_geom_id_map.end()) {
-        auto geoms = em_geom_map[this_surf];
-        auto em_geom = sense == 1 ? geoms.first : geoms.second;
-        if (em_geom) {
-          rtcAttachGeometry(scene, em_geom);
-          continue;
-        }
-    }
-
     // get all triangles on this surface
     moab::Range tris;
     rval = MBI->get_entities_by_type(this_surf, moab::MBTRI, tris);
@@ -190,19 +181,6 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
     // create a new geometry for the volume's scene
     RTCGeometry geom_0 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_USER); // EMBREE_FIXME: check if geometry gets properly committed
     unsigned int emsurf = rtcAttachGeometry(scene, geom_0);
-
-    if (em_geom_id_map.find(this_surf) == em_geom_id_map.end()) {
-      em_geom_id_map[this_surf] = {-1, -1};
-      em_geom_map[this_surf] = {nullptr, nullptr};
-    }
-
-    if (sense == 1) {
-      em_geom_id_map[this_surf].first = emsurf;
-      em_geom_map[this_surf].first = geom_0;
-    } else {
-      em_geom_id_map[this_surf].second = emsurf;
-      em_geom_map[this_surf].second = geom_0;
-    }
 
     rtcSetGeometryBuildQuality(geom_0,RTC_BUILD_QUALITY_HIGH);
     rtcSetGeometryUserPrimitiveCount(geom_0, num_tris);
@@ -240,23 +218,24 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
     return moab::MB_SUCCESS;
 }
 
-void RayTracingInterface::deleteBVH(moab::EntityHandle ent) {
+void RayTracingInterface::deleteBVH(moab::EntityHandle vol) {
 
-  if (GTT->dimension(ent) != 3) {
+  if (GTT->dimension(vol) != 3) {
     MB_CHK_SET_ERR_CONT(MB_FAILURE, "This entity is not a volume. "
     "BVHs can only be created and deleted by volume in double-down.");
     return;
   }
 
-  int ent_dim = GTT->dimension(ent);
+  int ent_dim = GTT->dimension(vol);
   moab::Range surfs;
 
-  MBI->get_child_meshsets(ent, surfs);
+  MBI->get_child_meshsets(vol, surfs);
   for (const auto& surf : surfs) { deleteBVH(surf); }
 
-  scenes.erase(std::find(scenes.begin(), scenes.end(), scene_map[ent]));
-  rtcReleaseScene(scene_map[ent]);
-  scene_map.erase(ent);
+  scenes.erase(std::find(scenes.begin(), scenes.end(), scene_map[vol]));
+  rtcReleaseScene(scene_map[vol]);
+  buffer_storage.free_storage(vol);
+  scene_map.erase(vol);
 }
 
 moab::ErrorCode
