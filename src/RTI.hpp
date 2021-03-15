@@ -20,38 +20,40 @@ class Node;
 class RayTracingInterface {
 
   class DblTriStorage {
-  private:
-    std::unordered_map<moab::EntityHandle, std::pair<int, std::shared_ptr<DblTri>>> storage_;
-
   public:
-    bool is_storing(moab::EntityHandle vol) {
-      return storage_.count(vol);
+    bool is_storing(moab::EntityHandle vol)
+    {
+      return storage_.find(vol) != storage_.end();
     }
 
-    bool is_storing(std::shared_ptr<DblTri> ptr) {
-      for (auto it : storage_) {
-        if (it.second.second == ptr) return true;
-      }
-      return false;
+    void store(moab::EntityHandle vol, std::vector<DblTri>&& buffer)
+    {
+      if (storage_.find(vol) != storage_.end()) { return; }
+      storage_[vol] = buffer;
     }
 
-    void store(moab::EntityHandle vol, int size, std::shared_ptr<DblTri> ptr) {
-      if (!is_storing(ptr)) {
-        storage_[vol] = {size, ptr};
-      }
+    std::vector<DblTri>& retrieve_buffer(moab::EntityHandle vol)
+    {
+      return storage_.at(vol);
     }
 
-    std::pair<int, std::shared_ptr<DblTri>> retrieve_buffer(moab::EntityHandle vol) {
-      return storage_[vol];
+    const std::vector<DblTri>& retrieve_buffer(moab::EntityHandle vol) const
+    {
+      return storage_.at(vol);
     }
 
-    void free_storage(moab::EntityHandle vol) {
+    void free_storage(moab::EntityHandle vol)
+    {
       if (is_storing(vol)) storage_.erase(vol);
     }
 
-    void clear() {
+    void clear()
+    {
       storage_.clear();
     }
+
+  private:
+    std::unordered_map<moab::EntityHandle, std::vector<DblTri>> storage_;
 
   };
 
@@ -132,6 +134,16 @@ class RayTracingInterface {
   moab::ErrorCode get_vols(moab::Range& vols);
   void fire(moab::EntityHandle vol, RTCDRayHit &rayhit);
 
+  //! \brief Allocates space for triangle reference information for the volume
+  moab::ErrorCode
+  allocateTriangleBuffer(moab::EntityHandle vol);
+
+  moab::ErrorCode
+  createVolumeBVH(moab::EntityHandle vol);
+
+  moab::ErrorCode
+  createSurfaceBVH(moab::EntityHandle surf);
+
   moab::ErrorCode
   createBVH(moab::EntityHandle vol);
 
@@ -188,7 +200,7 @@ class RayTracingInterface {
   std::unordered_map<moab::EntityHandle, std::pair<unsigned int, unsigned int>> em_geom_id_map;
   std::unordered_map<moab::EntityHandle, std::pair<RTCGeometry, RTCGeometry>> em_geom_map;
   std::unordered_map<moab::EntityHandle, RTCScene> scene_map;
-  std::unordered_map<moab::EntityHandle, std::vector<std::shared_ptr<DblTri>>> tri_ref_storage;
+
   std::vector<RTCScene> scenes;
   moab::EntityHandle sceneOffset;
   std::unordered_map<moab::EntityHandle, Node*> root_map;
@@ -196,7 +208,6 @@ class RayTracingInterface {
   // a couple values we never touch really
   double numerical_precision {1E-3};
   double overlap_thickness {0.0};
-
 
   RTCDevice g_device {nullptr};
 };

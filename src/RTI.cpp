@@ -101,17 +101,45 @@ moab::ErrorCode RayTracingInterface::init(std::string filename)
   sceneOffset = *vols.begin();
 
   // create an Embree geometry instance for each surface
-  for (moab::Range::iterator i = vols.begin(); i != vols.end(); i++) {
-    moab::EntityHandle vol = *i;
-
+  for (auto vol : vols) {
+    allocateTriangleBuffer(vol);
     createBVH(vol);
-
   } // end volume loop
 
   return moab::MB_SUCCESS;
 }
 
+moab::ErrorCode
+RayTracingInterface::allocateTriangleBuffer(moab::EntityHandle vol) {
+  moab::ErrorCode rval;
+
+  // get volume surfaces
+  moab::Range surfs;
+  rval = MBI->get_child_meshsets(vol, surfs);
+  MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces");
+
+  // allocate storage for the triangles of each volume
+  int num_vol_tris = 0;
+  for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
+    int num_surf_tris;
+    rval = MBI->get_number_entities_by_type(*j, moab::MBTRI, num_surf_tris);
+    MB_CHK_SET_ERR(rval, "Failed to get triangle count");
+    num_vol_tris += num_surf_tris;
+  }
+
+  // TODO: investigate memory usage here
+  std::vector<DblTri> emtris(num_vol_tris);
+  buffer_storage.store(vol, std::move(emtris));
+
+  return MB_SUCCESS;
+}
+
 moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
+
+  if (GTT->dimension(vol) != 3) {
+    MB_CHK_SET_ERR(MB_FAILURE, "This entity is not a volume. "
+    "BVHs can only be created and deleted by volume in double-down.");
+  }
 
   moab::ErrorCode rval;
 
@@ -123,23 +151,13 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
   scenes.push_back(scene);
   scene_map[vol] = scene;
 
+  auto& tri_buffer = buffer_storage.retrieve_buffer(vol);
+  auto emtris = tri_buffer.data();
+
   // get volume surfaces
   moab::Range surfs;
   rval = MBI->get_child_meshsets(vol, surfs);
   MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces");
-
-  // allocate triangle buffer
-  int num_vol_tris = 0;
-  for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
-    int num_surf_tris;
-    rval = MBI->get_number_entities_by_type(*j, moab::MBTRI, num_surf_tris);
-    MB_CHK_SET_ERR(rval, "Failed to get triangle count");
-    num_vol_tris += num_surf_tris;
-  }
-
-  // TODO: investigate memory usage here
-  std::shared_ptr<DblTri> emtris((DblTri*) malloc(num_vol_tris*sizeof(DblTri)));
-  buffer_storage.store(vol, num_vol_tris, emtris);
 
   int buffer_start = 0;
   for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
@@ -187,10 +205,10 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
     }
 
     rtcSetGeometryBuildQuality(geom_0,RTC_BUILD_QUALITY_HIGH);
-    rtcSetGeometryUserPrimitiveCount(geom_0,num_tris);
+    rtcSetGeometryUserPrimitiveCount(geom_0, num_tris);
     rtcSetGeometryTimeStepCount(geom_0,1);
 
-    DblTri* buff_ptr = emtris.get() + buffer_start;
+    DblTri* buff_ptr = emtris + buffer_start;
 
     rtcSetGeometryUserData(geom_0, buff_ptr);
 
@@ -214,6 +232,8 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
 
     } // end surface loop
 
+    //////////////////////////////////////////////////////////////////////////////////////////////
+
     // commit the scene to the device (ready for use)
     rtcCommitScene(scene);
 
@@ -222,45 +242,21 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
 
 void RayTracingInterface::deleteBVH(moab::EntityHandle ent) {
 
+  if (GTT->dimension(ent) != 3) {
+    MB_CHK_SET_ERR_CONT(MB_FAILURE, "This entity is not a volume. "
+    "BVHs can only be created and deleted by volume in double-down.");
+    return;
+  }
+
   int ent_dim = GTT->dimension(ent);
   moab::Range surfs;
 
-  switch(ent_dim) {
-    case 3:
-      MBI->get_child_meshsets(ent, surfs);
-      for (const auto& surf : surfs) { deleteBVH(surf); }
+  MBI->get_child_meshsets(ent, surfs);
+  for (const auto& surf : surfs) { deleteBVH(surf); }
 
-      scenes.erase(std::find(scenes.begin(), scenes.end(), scene_map[ent]));
-      rtcReleaseScene(scene_map[ent]);
-      scene_map.erase(ent);
-      buffer_storage.free_storage(ent);
-
-      break;
-
-    case 2:
-      moab::EntityHandle fwd_vol, rev_vol;
-      GTT->get_surface_senses(ent, fwd_vol, rev_vol);
-      auto& geoms = em_geom_id_map.at(ent);
-
-      // handle the forward scene
-      auto fwd_scene = scene_map[fwd_vol];
-      if (fwd_scene) {
-        rtcDetachGeometry(fwd_scene, geoms.first);
-        rtcReleaseGeometry(rtcGetGeometry(fwd_scene, geoms.first));
-        rtcCommitScene(fwd_scene);
-      }
-
-      // handle the reverse scene
-      auto rev_scene = scene_map[rev_vol];
-      if (rev_scene) {
-        rtcDetachGeometry(rev_scene, geoms.second);
-        rtcReleaseGeometry(rtcGetGeometry(rev_scene, geoms.second));
-        rtcCommitScene(rev_scene);
-      }
-
-      em_geom_id_map.erase(ent);
-      em_geom_map.erase(ent);
-  }
+  scenes.erase(std::find(scenes.begin(), scenes.end(), scene_map[ent]));
+  rtcReleaseScene(scene_map[ent]);
+  scene_map.erase(ent);
 }
 
 moab::ErrorCode
@@ -287,7 +283,7 @@ RayTracingInterface::get_normal(moab::EntityHandle surf,
     moab::EntityHandle vol = parent_vols[0];
 
     // arbitrarily use one of the parent volumes for the lookup
-    std::pair<int, std::shared_ptr<DblTri>> buffer = buffer_storage.retrieve_buffer(vol);
+    const std::vector<DblTri>& buffer = buffer_storage.retrieve_buffer(vol);
 
     RTCDPointQuery point_query;
     point_query.set_radius(inf);
@@ -306,7 +302,7 @@ RayTracingInterface::get_normal(moab::EntityHandle surf,
       MB_CHK_SET_ERR(moab::MB_FAILURE, "Failed to locate a nearest point.");
     }
 
-    const DblTri& this_tri = buffer.second.get()[point_query.primID];
+    const DblTri& this_tri = buffer.at(point_query.primID);
 
     if (this_tri.surf != surf) {
       MB_CHK_SET_ERR(moab::MB_FAILURE, "Nearest point was not on the correct surface.");
@@ -345,7 +341,7 @@ RayTracingInterface::get_normal(moab::EntityHandle surf,
 // sum area of elements in surface
 moab::ErrorCode
 RayTracingInterface::measure_area(moab::EntityHandle surface,
-                                  double& result )
+                                  double& result)
 {
     // get triangles in surface
   moab::Range triangles;
@@ -466,7 +462,7 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
                                   double &result, moab::EntityHandle* surface,
                                   moab::EntityHandle* facet) {
 
-  std::pair<int, std::shared_ptr<DblTri>> buffer = buffer_storage.retrieve_buffer(vol);
+  const std::vector<DblTri>& buffer = buffer_storage.retrieve_buffer(vol);
 
   RTCDPointQuery point_query;
   point_query.set_radius(inf);
@@ -490,7 +486,7 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
   }
 
   result = point_query.dradius;
-  const DblTri& this_tri = buffer.second.get()[point_query.primID];
+  const DblTri& this_tri = buffer.at(point_query.primID);
   if (surface) {
     *surface = this_tri.surf;
   }
