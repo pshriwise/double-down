@@ -21,28 +21,34 @@ class RayTracingInterface {
 
   class DblTriStorage {
   public:
-    bool is_storing(moab::EntityHandle vol) {
+    bool is_storing(moab::EntityHandle vol)
+    {
       return storage_.find(vol) != storage_.end();
     }
 
-    void store(moab::EntityHandle vol, std::vector<DblTri>&& buffer) {
+    void store(moab::EntityHandle vol, std::vector<DblTri>&& buffer)
+    {
       if (storage_.find(vol) != storage_.end()) { return; }
       storage_[vol] = buffer;
     }
 
-    std::vector<DblTri>& retrieve_buffer(moab::EntityHandle vol) {
+    std::vector<DblTri>& retrieve_buffer(moab::EntityHandle vol)
+    {
       return storage_.at(vol);
     }
 
-    const std::vector<DblTri>& retrieve_buffer(moab::EntityHandle vol) const {
+    const std::vector<DblTri>& retrieve_buffer(moab::EntityHandle vol) const
+    {
       return storage_.at(vol);
     }
 
-    void free_storage(moab::EntityHandle vol) {
+    void free_storage(moab::EntityHandle vol)
+    {
       if (is_storing(vol)) storage_.erase(vol);
     }
 
-    void clear() {
+    void clear()
+    {
       storage_.clear();
     }
 

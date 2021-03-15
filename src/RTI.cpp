@@ -155,6 +155,11 @@ RayTracingInterface::createSurfaceBVH(moab::EntityHandle surf) {
 
 moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
 
+  if (GTT->dimension(vol) != 3) {
+    MB_CHK_SET_ERR(MB_FAILURE, "This entity is not a volume. "
+    "BVHs can only be created and deleted by volume in double-down.");
+  }
+
   moab::ErrorCode rval;
 
   // add new scene to our vector
@@ -256,44 +261,21 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
 
 void RayTracingInterface::deleteBVH(moab::EntityHandle ent) {
 
+  if (GTT->dimension(ent) != 3) {
+    MB_CHK_SET_ERR_CONT(MB_FAILURE, "This entity is not a volume. "
+    "BVHs can only be created and deleted by volume in double-down.");
+    return;
+  }
+
   int ent_dim = GTT->dimension(ent);
   moab::Range surfs;
 
-  switch(ent_dim) {
-    case 3:
-      MBI->get_child_meshsets(ent, surfs);
-      for (const auto& surf : surfs) { deleteBVH(surf); }
+  MBI->get_child_meshsets(ent, surfs);
+  for (const auto& surf : surfs) { deleteBVH(surf); }
 
-      scenes.erase(std::find(scenes.begin(), scenes.end(), scene_map[ent]));
-      rtcReleaseScene(scene_map[ent]);
-      scene_map.erase(ent);
-
-      break;
-
-    case 2:
-      moab::EntityHandle fwd_vol, rev_vol;
-      GTT->get_surface_senses(ent, fwd_vol, rev_vol);
-      auto& geoms = em_geom_id_map.at(ent);
-
-      // handle the forward scene
-      auto fwd_scene = scene_map[fwd_vol];
-      if (fwd_scene) {
-        rtcDetachGeometry(fwd_scene, geoms.first);
-        rtcReleaseGeometry(rtcGetGeometry(fwd_scene, geoms.first));
-        rtcCommitScene(fwd_scene);
-      }
-
-      // handle the reverse scene
-      auto rev_scene = scene_map[rev_vol];
-      if (rev_scene) {
-        rtcDetachGeometry(rev_scene, geoms.second);
-        rtcReleaseGeometry(rtcGetGeometry(rev_scene, geoms.second));
-        rtcCommitScene(rev_scene);
-      }
-
-      em_geom_id_map.erase(ent);
-      em_geom_map.erase(ent);
-  }
+  scenes.erase(std::find(scenes.begin(), scenes.end(), scene_map[ent]));
+  rtcReleaseScene(scene_map[ent]);
+  scene_map.erase(ent);
 }
 
 moab::ErrorCode
