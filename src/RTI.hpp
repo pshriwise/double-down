@@ -139,12 +139,6 @@ class RayTracingInterface {
   allocateTriangleBuffer(moab::EntityHandle vol);
 
   moab::ErrorCode
-  createVolumeBVH(moab::EntityHandle vol);
-
-  moab::ErrorCode
-  createSurfaceBVH(moab::EntityHandle surf);
-
-  moab::ErrorCode
   createBVH(moab::EntityHandle vol);
 
   void
