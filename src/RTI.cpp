@@ -97,9 +97,6 @@ moab::ErrorCode RayTracingInterface::init(std::string filename)
     return moab::MB_SUCCESS;
   }
 
-  // set the EH offset
-  sceneOffset = *vols.begin();
-
   // create an Embree geometry instance for each surface
   for (auto vol : vols) {
     allocateTriangleBuffer(vol);
@@ -151,7 +148,6 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
   rtcSetSceneFlags(scene, RTC_SCENE_FLAG_ROBUST);
   rtcSetSceneBuildQuality(scene,RTC_BUILD_QUALITY_HIGH);
 
-  scenes.push_back(scene);
   scene_map[vol] = scene;
 
   auto& tri_buffer = buffer_storage.retrieve_buffer(vol);
@@ -161,6 +157,10 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
   moab::Range surfs;
   rval = MBI->get_child_meshsets(vol, surfs);
   MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces");
+
+  // make sure that all triangles are available
+  // before constructing the BVH
+  mdam->update();
 
   int buffer_start = 0;
   for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
@@ -229,10 +229,6 @@ void RayTracingInterface::deleteBVH(moab::EntityHandle vol) {
   int ent_dim = GTT->dimension(vol);
   moab::Range surfs;
 
-  MBI->get_child_meshsets(vol, surfs);
-  for (const auto& surf : surfs) { deleteBVH(surf); }
-
-  scenes.erase(std::find(scenes.begin(), scenes.end(), scene_map[vol]));
   rtcReleaseScene(scene_map[vol]);
   buffer_storage.free_storage(vol);
   scene_map.erase(vol);
@@ -272,7 +268,7 @@ RayTracingInterface::get_normal(moab::EntityHandle surf,
     RTCPointQueryContext pq_context;
     rtcInitPointQueryContext(&pq_context);
 
-    RTCScene scene = scenes[vol-sceneOffset];
+    RTCScene scene = scene_map[vol];
 
     rtcPointQuery(scene, &point_query, &pq_context,
                   (RTCPointQueryFunction)DblTriPointQueryFunc, (void*)&scene);
@@ -451,7 +447,7 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
   RTCPointQueryContext pq_context;
   rtcInitPointQueryContext(&pq_context);
 
-  RTCScene scene = scenes[vol-sceneOffset];
+  RTCScene scene = scene_map[vol];
 
   rtcPointQuery(scene, &point_query, &pq_context,
                 (RTCPointQueryFunction)DblTriPointQueryFunc, (void*)&scene);
@@ -478,7 +474,7 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
 }
 
 void RayTracingInterface::shutdown() {
-  for(auto s : scenes) { rtcReleaseScene(s); }
+  for(const auto& s : scene_map) { rtcReleaseScene(s.second); }
   if (g_device) { rtcReleaseDevice (g_device); }
 }
 
@@ -487,7 +483,7 @@ void RayTracingInterface::fire(moab::EntityHandle vol, RTCDRayHit &rayhit) {
   {
     RTCIntersectContext context;
     rtcInitIntersectContext(&context);
-    rtcIntersect1(scenes[vol-sceneOffset],&context,(RTCRayHit*)&rayhit);
+    rtcIntersect1(scene_map[vol],&context,(RTCRayHit*)&rayhit);
     rayhit.hit.Ng_x = -rayhit.hit.Ng_x;
     rayhit.hit.Ng_y = -rayhit.hit.Ng_y;
     rayhit.hit.Ng_z = -rayhit.hit.Ng_z;

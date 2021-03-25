@@ -26,6 +26,19 @@ public:
   //! \brief Update internal data structures to account for changes in the MOAB instance
   void update();
 
+  inline bool accessible(EntityHandle tri) {
+    // determine the correct index to use
+    int idx = 0;
+    auto fe = first_elements_[idx];
+    while(true) {
+      if (tri - fe.first < fe.second) { break; }
+      idx++;
+      if (idx >= first_elements_.size()) { return false; }
+      fe = first_elements_[idx];
+    }
+    return true;
+  }
+
   inline std::array<moab::CartVect, 3> get_mb_coords(const EntityHandle& tri) {
 
     // determine the correct index to use

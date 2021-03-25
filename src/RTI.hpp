@@ -195,8 +195,6 @@ class RayTracingInterface {
   DblTriStorage buffer_storage;
   std::unordered_map<moab::EntityHandle, RTCScene> scene_map;
 
-  std::vector<RTCScene> scenes;
-  moab::EntityHandle sceneOffset;
   std::unordered_map<moab::EntityHandle, Node*> root_map;
 
   // a couple values we never touch really
