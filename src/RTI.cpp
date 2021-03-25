@@ -277,7 +277,10 @@ RayTracingInterface::get_normal(moab::EntityHandle surf,
       MB_CHK_SET_ERR(moab::MB_FAILURE, "Failed to locate a nearest point.");
     }
 
-    const DblTri& this_tri = buffer.at(point_query.primID);
+    RTCGeometry g = rtcGetGeometry(scene, point_query.geomID);
+    void* tris_i = rtcGetGeometryUserData(g);
+    const DblTri* tris = (const DblTri*) tris_i;
+    const DblTri& this_tri = tris[point_query.primID];
 
     if (this_tri.surf != surf) {
       MB_CHK_SET_ERR(moab::MB_FAILURE, "Nearest point was not on the correct surface.");
