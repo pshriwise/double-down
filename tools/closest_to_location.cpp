@@ -6,7 +6,7 @@
 #include "moab/ProgOptions.hpp"
 
 // double-down
-#include "RTI.hpp"
+#include "double-down/RTI.hpp"
 
 
 int main(int argc, char** argv) {

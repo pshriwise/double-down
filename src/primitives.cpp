@@ -1,7 +1,11 @@
 
-#include "primitives.hpp"
-#include "moab/GeomUtil.hpp"
+// MOAB
+#include "moab/EntityType.hpp"
 #include "moab/CartVect.hpp"
+#include "moab/GeomUtil.hpp"
+
+// Local
+#include "double-down/primitives.hpp"
 
 void intersectionFilter(void* ptr, RTCDRayHit &rayhit)
 {
@@ -123,7 +127,6 @@ bool DblTriPointQueryFunc(RTCPointQueryFunctionArguments* args) {
   size_t item = args->primID;
 
   RTCGeometry g = rtcGetGeometry(*(RTCScene*)args->userPtr, args->geomID);
-
   void* tris_i = rtcGetGeometryUserData(g);
   const DblTri* tris = (const DblTri*) tris_i;
   const DblTri& this_tri = tris[item];
@@ -138,7 +141,6 @@ bool DblTriPointQueryFunc(RTCPointQueryFunctionArguments* args) {
   } else {
     return false;
   }
-
 }
 
 double DblTriClosestFunc(const DblTri& tri, const double loc[3]) {

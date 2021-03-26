@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "RTI.hpp"
+#include "double-down/RTI.hpp"
 #include "test_utils.hpp"
 
 int main() {

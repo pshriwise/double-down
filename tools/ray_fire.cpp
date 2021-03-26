@@ -4,7 +4,8 @@
 #include <ctime>
 
 #include "moab/ProgOptions.hpp"
-#include "RTI.hpp"
+
+#include "double-down/RTI.hpp"
 
 static const double PI = acos(-1.0);
 static const double denom = 1.0 / ((double) RAND_MAX);

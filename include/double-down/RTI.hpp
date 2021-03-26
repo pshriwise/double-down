@@ -134,7 +134,7 @@ class RayTracingInterface {
   moab::ErrorCode get_vols(moab::Range& vols);
   void fire(moab::EntityHandle vol, RTCDRayHit &rayhit);
 
-  //! \brief Allocates space for triangle reference information for the volume
+  /// Allocates space for triangle reference information for the volume
   moab::ErrorCode
   allocateTriangleBuffer(moab::EntityHandle vol);
 
