@@ -86,6 +86,8 @@ enable_testing()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/ddConfig.cmake.in" "${DD_CMAKE_CONFIG_LOCATION}/ddConfig.cmake")
 
+add_subdirectory(docs)
 add_subdirectory(tools)
 add_subdirectory(test)
 add_subdirectory(test_files)
+
