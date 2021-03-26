@@ -14,6 +14,12 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+import subprocess, os
+
+dd_source_dir = os.path.abspath('..')
+subprocess.call("sed 's!DD_SOURCE_DIR!{}!g' ./Doxyfile.in > ./Doxyfile".format(dd_source_dir), shell=True)
+subprocess.call("doxygen Doxyfile", shell=True)
+
 
 # -- Project information -----------------------------------------------------
 
@@ -32,6 +38,17 @@ release = '0.0.0'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.autosectionlabel',
+    'sphinx.ext.todo',
+    'sphinx.ext.coverage',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.ifconfig',
+    'sphinx.ext.viewcode',
+    'sphinx_sitemap',
+    'sphinx.ext.inheritance_diagram',
+    'breathe'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -43,6 +60,7 @@ templates_path = ['_templates']
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
 language = 'C++'
+highlight_language = 'C++'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -77,3 +95,11 @@ html_theme_options = {
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+# -- Breathe configuration -------------------------------------------------
+
+breathe_projects = {
+	"Double-Down": "_build/xml/"
+}
+breathe_default_project = "Double-Down"
+breathe_default_members = ('members', 'undoc-members')
