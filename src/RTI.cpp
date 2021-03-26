@@ -464,7 +464,12 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
   }
 
   result = point_query.dradius;
-  const DblTri& this_tri = buffer.at(point_query.primID);
+
+  RTCGeometry g = rtcGetGeometry(scene, point_query.geomID);
+  void* tris_i = rtcGetGeometryUserData(g);
+  const DblTri* tris = (const DblTri*) tris_i;
+  const DblTri& this_tri = tris[point_query.primID];
+
   if (surface) {
     *surface = this_tri.surf;
   }
