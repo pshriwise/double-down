@@ -260,6 +260,10 @@ RayTracingInterface::get_normal(moab::EntityHandle surf,
     // arbitrarily use one of the parent volumes for the lookup
     const std::vector<DblTri>& buffer = buffer_storage.retrieve_buffer(vol);
 
+    moab::EntityHandle surf, closest_facet;
+    double dist;
+    closest(vol, loc, dist, &surf, &closest_facet);
+
     RTCDPointQuery point_query;
     point_query.set_radius(inf);
     point_query.time = 0.f;
@@ -268,22 +272,14 @@ RayTracingInterface::get_normal(moab::EntityHandle surf,
     RTCPointQueryContext pq_context;
     rtcInitPointQueryContext(&pq_context);
 
-    RTCScene scene = scene_map[vol];
-
-    rtcPointQuery(scene, &point_query, &pq_context,
-                  (RTCPointQueryFunction)DblTriPointQueryFunc, (void*)&scene);
-
-    if (point_query.geomID == RTC_INVALID_GEOMETRY_ID) {
+    if (surf == 0) {
       MB_CHK_SET_ERR(moab::MB_FAILURE, "Failed to locate a nearest point.");
     }
 
-    const DblTri& this_tri = buffer.at(point_query.primID);
-
-    if (this_tri.surf != surf) {
+    if (surf != surf) {
       MB_CHK_SET_ERR(moab::MB_FAILURE, "Nearest point was not on the correct surface.");
     }
-
-    facet = this_tri.handle;
+    facet = closest_facet;
   }
 
   moab::CartVect coords[3];
@@ -461,7 +457,12 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
   }
 
   result = point_query.dradius;
-  const DblTri& this_tri = buffer.at(point_query.primID);
+
+  RTCGeometry g = rtcGetGeometry(scene, point_query.geomID);
+  void* tris_i = rtcGetGeometryUserData(g);
+  const DblTri* tris = (const DblTri*) tris_i;
+  const DblTri& this_tri = tris[point_query.primID];
+
   if (surface) {
     *surface = this_tri.surf;
   }

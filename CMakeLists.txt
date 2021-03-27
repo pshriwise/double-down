@@ -36,7 +36,7 @@ if (NOT ${EMBREE_VERSION} VERSION_GREATER 3.6.0)
 endif()
 
 # Set install locations
-set( DD_BINARY_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/bin" )
+set( DD_BINARY_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/tools" )
 set( DD_INCLUDE_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/include" )
 set( DD_LIBRARY_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/lib" )
 set( DD_CMAKE_CONFIG_LOCATION "${DD_LIBRARY_INSTALL_LOCATION}/cmake")
@@ -83,6 +83,7 @@ enable_testing()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/ddConfig.cmake.in" "${DD_CMAKE_CONFIG_LOCATION}/ddConfig.cmake")
 
-add_subdirectory(apps)
+
+add_subdirectory(tools)
 add_subdirectory(test)
 add_subdirectory(test_files)
