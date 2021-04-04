@@ -36,7 +36,10 @@ int main(int argc, char** argv) {
   RayTracingInterface* RTI = new RayTracingInterface();
 
   moab::ErrorCode rval;
-  rval = RTI->init(filename);
+  rval = RTI->load_file(filename);
+  MB_CHK_SET_ERR(rval, "Failed to load file: " + filename);
+
+  rval = RTI->init();
   MB_CHK_SET_ERR(rval, "Failed to initialize the RayTracingInterface.");
 
   moab::Range vols;

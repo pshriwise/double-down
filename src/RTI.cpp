@@ -21,65 +21,11 @@ void error(void* dum, RTCError code, const char* str) {
 
 RayTracingInterface::RayTracingInterface(moab::Interface *mbi) : GTT(std::make_shared<moab::GeomTopoTool>(mbi)), MBI(mbi) {}
 
-RayTracingInterface::RayTracingInterface(std::shared_ptr<moab::GeomTopoTool> gtt) : GTT(gtt), MBI(GTT->get_moab_instance()) {}
+RayTracingInterface::RayTracingInterface(std::shared_ptr<moab::GeomTopoTool> gtt) : MBI(gtt->get_moab_instance()), GTT(gtt) {}
 
-moab::ErrorCode RayTracingInterface::load_file(std::string filename) {
-  moab::ErrorCode rval = MBI->load_file(filename.c_str());
-  MB_CHK_SET_ERR(rval, "Failed to load the specified MOAB file: " << filename);
-  return rval;
-}
-
-moab::ErrorCode
-RayTracingInterface::get_obb(moab::EntityHandle vol,
-                             std::array<double, 3>& center,
-                             std::array<double, 3>& axis0,
-                             std::array<double, 3>& axis1,
-                             std::array<double, 3>& axis2)
-{
-  std::array<double, 3> llc;
-  std::array<double, 3> urc;
-  moab::ErrorCode rval = get_bbox(vol, llc.data(), urc.data());
-  MB_CHK_SET_ERR(rval, "Failed to get bounding box");
-
-  center[0] = 0.5 * (llc[0] + urc[0]);
-  center[1] = 0.5 * (llc[1] + urc[1]);
-  center[2] = 0.5 * (llc[2] + urc[2]);
-
-  axis0 = {1, 0, 0};
-  axis1 = {0, 1, 0};
-  axis2 = {0, 0, 1};
-
-  return moab::MB_SUCCESS;
-}
-
-moab::ErrorCode
-RayTracingInterface::get_bbox(moab::EntityHandle vol,
-                              double llc[3],
-                              double urc[3])
-{
-  RTCBounds bounds;
-
-  rtcGetSceneBounds(scene_map.at(vol), &bounds);
-
-  llc[0] = bounds.lower_x;
-  llc[1] = bounds.lower_y;
-  llc[2] = bounds.lower_z;
-  urc[0] = bounds.upper_x;
-  urc[1] = bounds.upper_y;
-  urc[2] = bounds.upper_z;
-
-  return moab::MB_SUCCESS;
-}
-
-
-moab::ErrorCode RayTracingInterface::init(std::string filename)
+moab::ErrorCode RayTracingInterface::init()
 {
   moab::ErrorCode rval;
-
-  if (filename != "") {
-    rval = load_file(filename);
-    MB_CHK_SET_ERR(rval, "Failed to load file.");
-  }
 
   // here we assume that the MOAB file is alredy loaded
   g_device = rtcNewDevice(NULL);
@@ -106,13 +52,66 @@ moab::ErrorCode RayTracingInterface::init(std::string filename)
   return moab::MB_SUCCESS;
 }
 
+moab::ErrorCode RayTracingInterface::load_file(std::string filename) {
+  moab::ErrorCode rval = MBI->load_file(filename.c_str());
+  MB_CHK_SET_ERR(rval, "Failed to load the specified MOAB file: " << filename);
+  return rval;
+}
+
 moab::ErrorCode
-RayTracingInterface::allocateTriangleBuffer(moab::EntityHandle vol) {
+RayTracingInterface::get_obb(moab::EntityHandle volume,
+                             std::array<double, 3>& center,
+                             std::array<double, 3>& axis0,
+                             std::array<double, 3>& axis1,
+                             std::array<double, 3>& axis2)
+{
+  std::array<double, 3> llc;
+  std::array<double, 3> urc;
+  moab::ErrorCode rval = get_bbox(volume, llc.data(), urc.data());
+  MB_CHK_SET_ERR(rval, "Failed to get bounding box");
+
+  center[0] = 0.5 * (llc[0] + urc[0]);
+  center[1] = 0.5 * (llc[1] + urc[1]);
+  center[2] = 0.5 * (llc[2] + urc[2]);
+
+  std::array<double, 3> width({0.5 * (urc[0] - llc[0]),
+                               0.5 * (urc[1] - llc[1]),
+                               0.5 * (urc[2] - llc[2])});
+
+  axis0 = {width[0], 0, 0};
+  axis1 = {0, width[1], 0};
+  axis2 = {0, 0, width[2]};
+
+  return moab::MB_SUCCESS;
+}
+
+moab::ErrorCode
+RayTracingInterface::get_bbox(moab::EntityHandle volume,
+                              double llc[3],
+                              double urc[3])
+{
+  RTCBounds bounds;
+
+  rtcGetSceneBounds(scene_map.at(volume), &bounds);
+
+  llc[0] = bounds.lower_x;
+  llc[1] = bounds.lower_y;
+  llc[2] = bounds.lower_z;
+  urc[0] = bounds.upper_x;
+  urc[1] = bounds.upper_y;
+  urc[2] = bounds.upper_z;
+
+  return moab::MB_SUCCESS;
+}
+
+
+moab::ErrorCode
+RayTracingInterface::allocateTriangleBuffer(moab::EntityHandle volume) {
   moab::ErrorCode rval;
 
   // get volume surfaces
   moab::Range surfs;
-  rval = MBI->get_child_meshsets(vol, surfs);
+  rval = MBI->get_child_meshsets(volume, surfs);
   MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces");
 
   // allocate storage for the triangles of each volume
@@ -126,14 +125,14 @@ RayTracingInterface::allocateTriangleBuffer(moab::EntityHandle vol) {
 
   // TODO: investigate memory usage here
   std::vector<DblTri> emtris(num_vol_tris);
-  buffer_storage.store(vol, std::move(emtris));
+  buffer_storage.store(volume, std::move(emtris));
 
   return MB_SUCCESS;
 }
 
-moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
+moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle volume) {
 
-  if (GTT->dimension(vol) != 3) {
+  if (GTT->dimension(volume) != 3) {
     MB_CHK_SET_ERR(MB_FAILURE, "This entity is not a volume. "
     "BVHs can only be created and deleted by volume in double-down.");
   }
@@ -141,21 +140,21 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
   moab::ErrorCode rval;
 
   // add buffer storage if it isn't already there
-  if (!buffer_storage.is_storing(vol)) { allocateTriangleBuffer(vol); }
+  if (!buffer_storage.is_storing(volume)) { allocateTriangleBuffer(volume); }
 
   // add new scene to our vector
   RTCScene scene = rtcNewScene(g_device);
   rtcSetSceneFlags(scene, RTC_SCENE_FLAG_ROBUST);
   rtcSetSceneBuildQuality(scene,RTC_BUILD_QUALITY_HIGH);
 
-  scene_map[vol] = scene;
+  scene_map[volume] = scene;
 
-  auto& tri_buffer = buffer_storage.retrieve_buffer(vol);
+  auto& tri_buffer = buffer_storage.retrieve_buffer(volume);
   auto emtris = tri_buffer.data();
 
   // get volume surfaces
   moab::Range surfs;
-  rval = MBI->get_child_meshsets(vol, surfs);
+  rval = MBI->get_child_meshsets(volume, surfs);
   MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces");
 
   // make sure that all triangles are available
@@ -168,7 +167,7 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
 
     // find the surface sense
     int sense;
-    rval = GTT->get_sense(this_surf, vol, sense);
+    rval = GTT->get_sense(this_surf, volume, sense);
     MB_CHK_SET_ERR(rval, "Failed to get sense for surface");
 
     // get all triangles on this surface
@@ -178,8 +177,9 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
 
     int num_tris = tris.size();
 
-    // create a new geometry for the volume's scene
-    RTCGeometry geom_0 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_USER); // EMBREE_FIXME: check if geometry gets properly committed
+    // create a new geometry for the volumeume's scene
+    // EMBREE_FIXME: check if geometry gets properly committed
+    RTCGeometry geom_0 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_USER);
     unsigned int emsurf = rtcAttachGeometry(scene, geom_0);
 
     rtcSetGeometryBuildQuality(geom_0,RTC_BUILD_QUALITY_HIGH);
@@ -218,24 +218,24 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle vol) {
     return moab::MB_SUCCESS;
 }
 
-void RayTracingInterface::deleteBVH(moab::EntityHandle vol) {
+void RayTracingInterface::deleteBVH(moab::EntityHandle volume) {
 
-  if (GTT->dimension(vol) != 3) {
+  if (GTT->dimension(volume) != 3) {
     MB_CHK_SET_ERR_CONT(MB_FAILURE, "This entity is not a volume. "
     "BVHs can only be created and deleted by volume in double-down.");
     return;
   }
 
-  int ent_dim = GTT->dimension(vol);
+  int ent_dim = GTT->dimension(volume);
   moab::Range surfs;
 
-  rtcReleaseScene(scene_map[vol]);
-  buffer_storage.free_storage(vol);
-  scene_map.erase(vol);
+  rtcReleaseScene(scene_map[volume]);
+  buffer_storage.free_storage(volume);
+  scene_map.erase(volume);
 }
 
 moab::ErrorCode
-RayTracingInterface::get_normal(moab::EntityHandle surf,
+RayTracingInterface::get_normal(moab::EntityHandle surface,
                                 const double loc[3],
                                 double angle[3],
                                 const moab::GeomQueryTool::RayHistory* history)
@@ -251,7 +251,7 @@ RayTracingInterface::get_normal(moab::EntityHandle surf,
 
     // get the one of the volumes for this surface
     moab::Range parent_vols;
-    rval = MBI->get_parent_meshsets(surf, parent_vols);
+    rval = MBI->get_parent_meshsets(surface, parent_vols);
     MB_CHK_SET_ERR_CONT(rval, "Failed to get parent volumes of the surface");
     assert(parent_vols.size() != 0);
 
@@ -276,7 +276,7 @@ RayTracingInterface::get_normal(moab::EntityHandle surf,
       MB_CHK_SET_ERR(moab::MB_FAILURE, "Failed to locate a nearest point.");
     }
 
-    if (surf != surf) {
+    if (surf != surface) {
       MB_CHK_SET_ERR(moab::MB_FAILURE, "Nearest point was not on the correct surface.");
     }
     facet = closest_facet;
@@ -429,11 +429,13 @@ RayTracingInterface::closest_to_location(moab::EntityHandle volume,
   return moab::MB_SUCCESS;
 }
 
-void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
-                                  double &result, moab::EntityHandle* surface,
+void RayTracingInterface::closest(moab::EntityHandle volume,
+                                  const double loc[3],
+                                  double &result,
+                                  moab::EntityHandle* surface,
                                   moab::EntityHandle* facet) {
 
-  const std::vector<DblTri>& buffer = buffer_storage.retrieve_buffer(vol);
+  const std::vector<DblTri>& buffer = buffer_storage.retrieve_buffer(volume);
 
   RTCDPointQuery point_query;
   point_query.set_radius(inf);
@@ -443,7 +445,7 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
   RTCPointQueryContext pq_context;
   rtcInitPointQueryContext(&pq_context);
 
-  RTCScene scene = scene_map[vol];
+  RTCScene scene = scene_map[volume];
 
   rtcPointQuery(scene, &point_query, &pq_context,
                 (RTCPointQueryFunction)DblTriPointQueryFunc, (void*)&scene);
@@ -475,16 +477,17 @@ void RayTracingInterface::closest(moab::EntityHandle vol, const double loc[3],
 }
 
 void RayTracingInterface::shutdown() {
-  for(const auto& s : scene_map) { rtcReleaseScene(s.second); }
+  // for(const auto& s : scene_map) { rtcReleaseScene(s.second); }
+  // scene_map.clear();
   if (g_device) { rtcReleaseDevice (g_device); }
 }
 
-void RayTracingInterface::fire(moab::EntityHandle vol, RTCDRayHit &rayhit) {
+void RayTracingInterface::fire(moab::EntityHandle volume, RTCDRayHit &rayhit) {
 
   {
     RTCIntersectContext context;
     rtcInitIntersectContext(&context);
-    rtcIntersect1(scene_map[vol],&context,(RTCRayHit*)&rayhit);
+    rtcIntersect1(scene_map[volume],&context,(RTCRayHit*)&rayhit);
     rayhit.hit.Ng_x = -rayhit.hit.Ng_x;
     rayhit.hit.Ng_y = -rayhit.hit.Ng_y;
     rayhit.hit.Ng_z = -rayhit.hit.Ng_z;
@@ -501,9 +504,9 @@ void RayTracingInterface::fire(moab::EntityHandle vol, RTCDRayHit &rayhit) {
 
 // helper function for point_in_volume_slow.  calculate area of a polygon
 // projected into a unit-sphere space
-moab::ErrorCode RayTracingInterface::poly_solid_angle( moab::EntityHandle face,
-                                                       const moab::CartVect& point,
-                                                       double& area )
+moab::ErrorCode RayTracingInterface::poly_solid_angle(moab::EntityHandle face,
+                                                      const moab::CartVect& point,
+                                                      double& solid_angle)
 {
   ErrorCode rval;
 
@@ -536,7 +539,7 @@ moab::ErrorCode RayTracingInterface::poly_solid_angle( moab::EntityHandle face,
 
   // calculate area
   double s, ang;
-  area = 0.0;
+  solid_angle = 0.0;
   moab::CartVect r, n1, n2, b, a = coords[len-1] - coords[0];
   for (int i = 0; i < len; ++i) {
     r = coords[i] - point;
@@ -546,13 +549,13 @@ moab::ErrorCode RayTracingInterface::poly_solid_angle( moab::EntityHandle face,
     s = (n1 % n2) / (n1.length() * n2.length()); // = cos(angle between norm1,norm2)
     ang = s <= -1.0 ? M_PI : s >= 1.0 ? 0.0 : acos(s); // = acos(s)
     s = (b * a) % norm; // =orientation of triangle wrt point
-    area += s > 0.0 ? M_PI - ang : M_PI + ang;
+    solid_angle += s > 0.0 ? M_PI - ang : M_PI + ang;
     a = -b;
   }
 
-  area -= M_PI * (len - 2);
+  solid_angle -= M_PI * (len - 2);
   if ((norm % r) > 0)
-    area = -area;
+    solid_angle = -solid_angle;
   return MB_SUCCESS;
 }
 
