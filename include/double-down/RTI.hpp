@@ -89,7 +89,8 @@ class RayTracingInterface {
   //! \param filename Path to the mesh file to load.
   moab::ErrorCode load_file(std::string filename);
 
-  //! \brief Initialize the RTI, building acceleration datastructures and  internal storage
+  //! \brief Initialize the RTI, building acceleration datastructures and internal storage.
+  //! Assumes that the MOAB file is already open.
   moab::ErrorCode init();
 
   //! \brief Release all Embree scenes and device.
@@ -120,7 +121,7 @@ class RayTracingInterface {
   //! \param xyz Location to check.
   //! \param result Result of the query (1 if inside, 0 if outside).
   moab::ErrorCode point_in_volume_slow(moab::EntityHandle volume,
-                                       const double xyz[3],
+                                       const std::array<double, 3> xyz,
                                        int& result);
 
   //! \brief Calculates the solid angle of a polygon, \p face, with respect to \p point.
@@ -195,8 +196,8 @@ class RayTracingInterface {
   //! \param llc x,y,z coordinates for the lower left corner of the box.
   //! \param urc x,y,z coordinates for the upper right corner of the box.
   moab::ErrorCode get_bbox(moab::EntityHandle volume,
-                           double llc[3],
-                           double urc[3]);
+                           std::array<double, 3>& llc[3],
+                           std::array<double, 3>& urc[3]);
 
   //! \brief Get a MOAB Range of all the volumes in the RayTracingInterface.
   //! \param vols Set to the range of volumes in the RayTracingInterface.
@@ -218,12 +219,12 @@ class RayTracingInterface {
   //! geometry in Embree are allocated and stored for the volume.
   //! \param volume MOAB EntityHandle of the volume.
   moab::ErrorCode
-  createBVH(moab::EntityHandle vol);
+  createBVH(moab::EntityHandle volume);
 
   //! \brief Deletes the BVH for the volume if present.
   //! \param volume MOAB EntityHandle of the volume.
   void
-  deleteBVH(moab::EntityHandle vol);
+  deleteBVH(moab::EntityHandle volume);
 
   //! \brief Finds the distance to the closest point on the \p volume
   //! from a specified location, \p point.
@@ -281,7 +282,7 @@ class RayTracingInterface {
 
   //! \brief Raw pointer to the MOAB GeomTopoTool.
   inline
-  moab::GeomTopoTool * gttool() { return GTT.get(); }
+  moab::GeomTopoTool* gttool() { return GTT.get(); }
 
   //! \brief Accessor for the numerical precision.
   inline

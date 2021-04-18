@@ -5,10 +5,9 @@
 #include "MBTagConventions.hpp"
 #include "moab/GeomTopoTool.hpp"
 
-// Local
+// Double-down
 #include "double-down/RTI.hpp"
 #include "double-down/AABB.h"
-
 
 void error(void* dum, RTCError code, const char* str) {
   if (code != RTC_ERROR_NONE) {
@@ -17,7 +16,6 @@ void error(void* dum, RTCError code, const char* str) {
     std::cout << msg << std::endl;
   }
 }
-
 
 RayTracingInterface::RayTracingInterface(moab::Interface *mbi) : GTT(std::make_shared<moab::GeomTopoTool>(mbi)), MBI(mbi) {}
 
@@ -34,6 +32,7 @@ moab::ErrorCode RayTracingInterface::init()
 
   mdam = std::shared_ptr<MBDirectAccess>(new MBDirectAccess(MBI));
 
+  // detemine how many volumes are in the MOAB file
   moab::Range vols;
   rval = get_vols(vols);
   MB_CHK_SET_ERR(rval, "Failed to get MOAB volumes");
@@ -78,6 +77,7 @@ RayTracingInterface::get_obb(moab::EntityHandle volume,
                                0.5 * (urc[1] - llc[1]),
                                0.5 * (urc[2] - llc[2])});
 
+  // bounding boxes from Embree are axis-aligned
   axis0 = {width[0], 0, 0};
   axis1 = {0, width[1], 0};
   axis2 = {0, 0, width[2]};
@@ -87,8 +87,8 @@ RayTracingInterface::get_obb(moab::EntityHandle volume,
 
 moab::ErrorCode
 RayTracingInterface::get_bbox(moab::EntityHandle volume,
-                              double llc[3],
-                              double urc[3])
+                              std::array<double, 3>& llc[3],
+                              std::array<double, 3>& urc[3])
 {
   RTCBounds bounds;
 
@@ -106,7 +106,8 @@ RayTracingInterface::get_bbox(moab::EntityHandle volume,
 
 
 moab::ErrorCode
-RayTracingInterface::allocateTriangleBuffer(moab::EntityHandle volume) {
+RayTracingInterface::allocateTriangleBuffer(moab::EntityHandle volume)
+{
   moab::ErrorCode rval;
 
   // get volume surfaces
@@ -114,7 +115,7 @@ RayTracingInterface::allocateTriangleBuffer(moab::EntityHandle volume) {
   rval = MBI->get_child_meshsets(volume, surfs);
   MB_CHK_SET_ERR(rval, "Failed to get the volume sufaces");
 
-  // allocate storage for the triangles of each volume
+  // allocate triangle storage for this volume
   int num_vol_tris = 0;
   for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
     int num_surf_tris;
@@ -130,14 +131,14 @@ RayTracingInterface::allocateTriangleBuffer(moab::EntityHandle volume) {
   return MB_SUCCESS;
 }
 
-moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle volume) {
+moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle volume)
+{
+  moab::ErrorCode rval;
 
   if (GTT->dimension(volume) != 3) {
     MB_CHK_SET_ERR(MB_FAILURE, "This entity is not a volume. "
     "BVHs can only be created and deleted by volume in double-down.");
   }
-
-  moab::ErrorCode rval;
 
   // add buffer storage if it isn't already there
   if (!buffer_storage.is_storing(volume)) { allocateTriangleBuffer(volume); }
@@ -147,6 +148,7 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle volume) {
   rtcSetSceneFlags(scene, RTC_SCENE_FLAG_ROBUST);
   rtcSetSceneBuildQuality(scene,RTC_BUILD_QUALITY_HIGH);
 
+  // add this scene to the map from MOAB volumes to Embree scenes
   scene_map[volume] = scene;
 
   auto& tri_buffer = buffer_storage.retrieve_buffer(volume);
@@ -161,6 +163,7 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle volume) {
   // before constructing the BVH
   mdam->update();
 
+  // index to keep track of where we're adding triangles in the storage buffer
   int buffer_start = 0;
   for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
     moab::EntityHandle this_surf = *j;
@@ -182,35 +185,37 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle volume) {
     RTCGeometry geom_0 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_USER);
     unsigned int emsurf = rtcAttachGeometry(scene, geom_0);
 
+    // build settings for the Embree scene
     rtcSetGeometryBuildQuality(geom_0,RTC_BUILD_QUALITY_HIGH);
     rtcSetGeometryUserPrimitiveCount(geom_0, num_tris);
     rtcSetGeometryTimeStepCount(geom_0,1);
 
+    // get the pointer into the buffer at the right location
     DblTri* buff_ptr = emtris + buffer_start;
 
+    // set the data for this Embree geometry using that pointer
     rtcSetGeometryUserData(geom_0, buff_ptr);
 
-    // set data for this triangle
+    // set data for all triangles of this surfaces
     for (int k = 0; k < num_tris; k++) {
       buff_ptr[k].mdam = mdam.get();
       buff_ptr[k].handle = tris[k];
       buff_ptr[k].surf = this_surf;
       buff_ptr[k].geomID = emsurf;
       buff_ptr[k].sense = sense;
-    } // end tris loop
+    }
 
-    // advance the buffer offset by the number of triangles
+    // advance the buffer offset by the number of triangles in this surface
     buffer_start += num_tris;
 
+    // point the geometry BVH builder to the custom triangle bounding, intersection, and occlusion functions
     rtcSetGeometryBoundsFunction(geom_0,(RTCBoundsFunction)&DblTriBounds, NULL);
     rtcSetGeometryIntersectFunction (geom_0, (RTCIntersectFunctionN)&MBDblTriIntersectFunc);
     rtcSetGeometryOccludedFunction (geom_0, (RTCOccludedFunctionN)&DblTriOccludedFunc);
-    // rtcSetGeometryPointQueryFunction(geom_0,(RTCPointQueryFunction)DblTriPointQueryFunc);
+
+    // add the geometry to the Embree device
     rtcCommitGeometry(geom_0);
-
     } // end surface loop
-
-    //////////////////////////////////////////////////////////////////////////////////////////////
 
     // commit the scene to the device (ready for use)
     rtcCommitScene(scene);
@@ -218,7 +223,8 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle volume) {
     return moab::MB_SUCCESS;
 }
 
-void RayTracingInterface::deleteBVH(moab::EntityHandle volume) {
+void RayTracingInterface::deleteBVH(moab::EntityHandle volume)
+{
 
   if (GTT->dimension(volume) != 3) {
     MB_CHK_SET_ERR_CONT(MB_FAILURE, "This entity is not a volume. "
@@ -229,23 +235,27 @@ void RayTracingInterface::deleteBVH(moab::EntityHandle volume) {
   int ent_dim = GTT->dimension(volume);
   moab::Range surfs;
 
+  // remove the scene from Embree
   rtcReleaseScene(scene_map[volume]);
+  // remove the volume entry from the internal mapping structures
   buffer_storage.free_storage(volume);
   scene_map.erase(volume);
 }
 
 moab::ErrorCode
 RayTracingInterface::get_normal(moab::EntityHandle surface,
-                                const double loc[3],
-                                double angle[3],
+                                const std::array<double, 3> loc,
+                                std::array<double , 3> angle,
                                 const moab::GeomQueryTool::RayHistory* history)
 {
   moab::ErrorCode rval;
   moab::EntityHandle facet;
 
+  // use the last triangle hit if the history is provided
   if (history) {
     rval = history->get_last_intersection(facet);
     MB_CHK_SET_ERR_CONT(rval, "Failed to get the last intersection from the ray history");
+  // if no history is present, find the closest triangle to this location
   } else {
     // perform a closest location search
 
@@ -276,9 +286,11 @@ RayTracingInterface::get_normal(moab::EntityHandle surface,
       MB_CHK_SET_ERR(moab::MB_FAILURE, "Failed to locate a nearest point.");
     }
 
+    // TODO: restrict the search for the closest triangle to the surface provided
     if (surf != surface) {
       MB_CHK_SET_ERR(moab::MB_FAILURE, "Nearest point was not on the correct surface.");
     }
+
     facet = closest_facet;
   }
 
@@ -314,7 +326,7 @@ moab::ErrorCode
 RayTracingInterface::measure_area(moab::EntityHandle surface,
                                   double& result)
 {
-    // get triangles in surface
+  // get triangles in surface
   moab::Range triangles;
   moab::ErrorCode rval = MBI->get_entities_by_dimension( surface, 2, triangles );
   MB_CHK_SET_ERR(rval, "Failed to get the surface entities");
@@ -327,7 +339,7 @@ RayTracingInterface::measure_area(moab::EntityHandle surface,
     MB_CHK_SET_ERR(rval, "Failed to the surface's triangle entities");
   }
 
-    // calculate sum of area of triangles
+  // calculate sum of area of triangles
   result = 0.0;
   const moab::EntityHandle *conn;
   int len;
@@ -341,12 +353,13 @@ RayTracingInterface::measure_area(moab::EntityHandle surface,
     rval = MBI->get_coords( conn, 3, coords[0].array() );
     MB_CHK_SET_ERR(rval, "Failed to get the current triangle's vertex coordinates");
 
-    //calculated area using cross product of triangle edges
+    // calculated area using cross product of triangle edges
     moab::CartVect v1 = coords[1] - coords[0];
     moab::CartVect v2 = coords[2] - coords[0];
     moab::CartVect xp = v1 * v2;
     result += xp.length();
   }
+
   result *= 0.5;
   return MB_SUCCESS;
 }
@@ -365,23 +378,22 @@ RayTracingInterface::measure_volume(moab::EntityHandle volume,
     return MB_SUCCESS;
   }
 
-    // get surfaces from volume
+  // get surfaces from volume
   rval = MBI->get_child_meshsets( volume, surfaces );
   MB_CHK_SET_ERR(rval, "Failed to get the volume's child surfaces");
 
-    // get surface senses
+  // get surface senses
   std::vector<int> senses( surfaces.size() );
   rval = GTT->get_surface_senses( volume, surfaces.size(), &surfaces[0], &senses[0] );
   MB_CHK_SET_ERR(rval, "Failed to retrieve surface-volume sense data. Cannot calculate volume");
 
   for (unsigned i = 0; i < surfaces.size(); ++i) {
-      // skip non-manifold surfaces
-    if (!senses[i])
-      continue;
+    // skip non-manifold surfaces
+    if (!senses[i]) { continue };
 
-      // get triangles in surface
+    // get triangles in surface
     moab::Range triangles;
-    rval = MBI->get_entities_by_dimension( surfaces[i], 2, triangles );
+    rval = MBI->get_entities_by_dimension(surfaces[i], 2, triangles);
     MB_CHK_SET_ERR(rval, "Failed to get the surface triangles");
 
     if (!triangles.all_of_type(MBTRI)) {
@@ -389,21 +401,20 @@ RayTracingInterface::measure_volume(moab::EntityHandle volume,
                 << " contains non-triangle elements. Volume calculation may be incorrect."
                 << std::endl;
       triangles.clear();
-      rval = MBI->get_entities_by_type( surfaces[i], MBTRI, triangles );
+      rval = MBI->get_entities_by_type(surfaces[i], MBTRI, triangles);
       MB_CHK_SET_ERR(rval, "Failed to get the surface triangles");
     }
 
-      // calculate signed volume beneath surface (x 6.0)
+    // calculate signed volume beneath surface (x 6.0)
     double surf_sum = 0.0;
     const moab::EntityHandle *conn;
     int len;
+
     moab::CartVect coords[3];
     for (moab::Range::iterator j = triangles.begin(); j != triangles.end(); ++j) {
       rval = MBI->get_connectivity( *j, conn, len, true );
       MB_CHK_SET_ERR(rval, "Failed to get the connectivity of the current triangle");
-      if(3 != len) {
-	MB_SET_ERR(MB_FAILURE, "Incorrect connectivity length for triangle");
-      }
+      if(3 != len) { MB_SET_ERR(MB_FAILURE, "Incorrect connectivity length for triangle"); }
       rval = MBI->get_coords( conn, 3, coords[0].array() );
       MB_CHK_SET_ERR(rval, "Failed to get the coordinates of the current triangle's vertices");
 
@@ -411,46 +422,51 @@ RayTracingInterface::measure_volume(moab::EntityHandle volume,
       coords[2] -= coords[0];
       surf_sum += (coords[0] % (coords[1] * coords[2]));
     }
+
     result += senses[i] * surf_sum;
   }
-
   result /= 6.0;
+
   return MB_SUCCESS;
 }
 
 moab::ErrorCode
 RayTracingInterface::closest_to_location(moab::EntityHandle volume,
                                          const double point[3],
-                                         double & result,
-                                         moab::EntityHandle* closest_surf) {
-
+                                         double& result,
+                                         moab::EntityHandle* closest_surf)
+{
   closest(volume, point, result, closest_surf, nullptr);
-
   return moab::MB_SUCCESS;
 }
 
 void RayTracingInterface::closest(moab::EntityHandle volume,
                                   const double loc[3],
-                                  double &result,
+                                  double& result,
                                   moab::EntityHandle* surface,
-                                  moab::EntityHandle* facet) {
+                                  moab::EntityHandle* facet)
+{
 
   const std::vector<DblTri>& buffer = buffer_storage.retrieve_buffer(volume);
 
+  // create point query object, a dual representation of the single and double precision query,
+  // sets parameters of the closest to location query
   RTCDPointQuery point_query;
   point_query.set_radius(inf);
   point_query.time = 0.f;
   point_query.set_point(loc);
 
+  // create a point query context (Embree needs to initialize this object)
   RTCPointQueryContext pq_context;
   rtcInitPointQueryContext(&pq_context);
 
   RTCScene scene = scene_map[volume];
 
+  // perform the point query on the Embree scene
   rtcPointQuery(scene, &point_query, &pq_context,
                 (RTCPointQueryFunction)DblTriPointQueryFunc, (void*)&scene);
 
-  // handle not found case
+  // handle case where no triangle is found
   if (point_query.geomID == RTC_INVALID_GEOMETRY_ID) {
     if (surface) { surface = 0; }
     if (facet) { facet = 0; }
@@ -458,32 +474,29 @@ void RayTracingInterface::closest(moab::EntityHandle volume,
     return;
   }
 
+  // set the result using the double-precision value of the query result
   result = point_query.dradius;
 
+  // determine what scene
   RTCGeometry g = rtcGetGeometry(scene, point_query.geomID);
+  // look up the triangle buffer array we stored on this geometry
   void* tris_i = rtcGetGeometryUserData(g);
+  // find the DblTri in the array using the primitive ID as an index
   const DblTri* tris = (const DblTri*) tris_i;
   const DblTri& this_tri = tris[point_query.primID];
 
-  if (surface) {
-    *surface = this_tri.surf;
-  }
-  if (facet) {
-    *facet = this_tri.handle;
-  }
-
-  return;
-
+  // set the outgoing surface and triangle data
+  if (surface) { *surface = this_tri.surf; }
+  if (facet) { *facet = this_tri.handle; }
 }
 
 void RayTracingInterface::shutdown() {
-  // for(const auto& s : scene_map) { rtcReleaseScene(s.second); }
-  // scene_map.clear();
+  // release the device
   if (g_device) { rtcReleaseDevice (g_device); }
 }
 
-void RayTracingInterface::fire(moab::EntityHandle volume, RTCDRayHit &rayhit) {
-
+void RayTracingInterface::fire(moab::EntityHandle volume, RTCDRayHit &rayhit)
+{
   {
     RTCIntersectContext context;
     rtcInitIntersectContext(&context);
@@ -494,7 +507,6 @@ void RayTracingInterface::fire(moab::EntityHandle volume, RTCDRayHit &rayhit) {
   }
 
 }
-
 
 // point_in_volume_slow, including poly_solid_angle helper subroutine
 // are adapted from "Point in Polyhedron Testing Using Spherical Polygons", Paulo Cezar
@@ -510,7 +522,7 @@ moab::ErrorCode RayTracingInterface::poly_solid_angle(moab::EntityHandle face,
 {
   ErrorCode rval;
 
-    // Get connectivity
+  // Get connectivity
   const moab::EntityHandle* conn;
   int len;
   rval = MBI->get_connectivity( face, conn, len, true );
@@ -601,18 +613,20 @@ RayTracingInterface::point_in_volume_slow(moab::EntityHandle volume,
   return MB_SUCCESS;
 }
 
-moab::ErrorCode RayTracingInterface::point_in_volume(const moab::EntityHandle volume,
-                                                     const double xyz[3],
-                                                     int& result,
-                                                     const double *uvw,
-                                                     const moab::GeomQueryTool::RayHistory *history,
-                                                     double overlap_tol)
+moab::ErrorCode
+RayTracingInterface::point_in_volume(const moab::EntityHandle volume,
+                                     const std::array<double, 3> xyz,
+                                     int& result,
+                                     const double *uvw,
+                                     const moab::GeomQueryTool::RayHistory *history,
+                                     double overlap_tol)
 {
   const double huge_val = std::numeric_limits<double>::max();
   double dist_limit = huge_val;
 
-   RTCScene scene = scene_map[volume];
+  RTCScene scene = scene_map[volume];
 
+  // use the direction if provided, otherwise use any random direction
   double dir[3];
   if (uvw) {
     dir[0] = uvw[0];
@@ -624,18 +638,22 @@ moab::ErrorCode RayTracingInterface::point_in_volume(const moab::EntityHandle vo
     dir[2] = 0.5;
   }
 
+  // struct that holds all info about the intersection
   MBRayHit mbrayhit;
 
+  // set information about the ray
   MBRay& mbray = mbrayhit.ray;
   mbray.set_org(xyz);
   mbray.set_dir(dir);
   mbray.rf_type = RayFireType::PIV;
   mbray.orientation = 1;
-  mbray.mask = -1;
-  mbray.tnear = 0.0;
+  mbray.mask = -1; // no mask
+  mbray.tnear = 0.0; // no minimum distance befor the intersection
   mbray.set_len(dist_limit);
+  // set the history if present
   if (history) { mbray.rh = history; }
 
+  // set initial hit data
   MBHit& mbhit = mbrayhit.hit;
   mbhit.geomID = RTC_INVALID_GEOMETRY_ID;
   mbhit.primID = RTC_INVALID_GEOMETRY_ID;
@@ -645,6 +663,8 @@ moab::ErrorCode RayTracingInterface::point_in_volume(const moab::EntityHandle vo
    RTCIntersectContext context;
     rtcInitIntersectContext(&context);
     rtcIntersect1(scene,&context,(RTCRayHit*)&mbrayhit);
+    // triangle normal conventions are the flipped in Embree compared to MOAB
+    // TODO: reverse the initial triangle normals so we don't have to do these ops here.
     mbhit.Ng_x = -mbhit.Ng_x;
     mbhit.Ng_y = -mbhit.Ng_y;
     mbhit.Ng_z = -mbhit.Ng_z;
@@ -653,6 +673,8 @@ moab::ErrorCode RayTracingInterface::point_in_volume(const moab::EntityHandle vo
   Vec3da ray_dir(dir);
   Vec3da tri_norm(mbrayhit.hit.dNg[0], mbrayhit.hit.dNg[1], mbrayhit.hit.dNg[2]);
 
+  // use the triangle normal vs. ray direction to determine if this is an entering
+  // or exiting intersection
   if (mbrayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
     result = dot(ray_dir, tri_norm) > 0.0 ? 1 : 0;
   }
@@ -661,61 +683,20 @@ moab::ErrorCode RayTracingInterface::point_in_volume(const moab::EntityHandle vo
   }
 
   return moab::MB_SUCCESS;
-
-//   if (overlap_tol != 0.0) {
-//     MBRayAccumulate aray;
-//     aray.set_org(xyz);
-//     aray.set_dir(dir);
-//     aray.instID = volume;
-//     aray.set_len(dist_limit);
-//     aray.rf_type = RayFireType::ACCUM;
-//     aray.sum = 0;
-//     aray.num_hit = 0;
-
-//     {
-//       RTCIntersectContext context;
-//       rtcInitIntersectContext(&context);
-//       rtcIntersect1(scene,&context,&*((RTCRay*)&aray));
-//       *((RTCRay*)&aray).hit.Ng_x = -*((RTCRay*)&aray).hit.Ng_x; // EMBREE_FIXME: only correct for triangles,quads, and subdivision surfaces
-//       *((RTCRay*)&aray).hit.Ng_y = -*((RTCRay*)&aray).hit.Ng_y;
-//       *((RTCRay*)&aray).hit.Ng_z = -*((RTCRay*)&aray).hit.Ng_z;
-//     }
-//     if (aray.num_hit == 0) { result = 0; return; }
-//     int hits = aray.num_hit;
-
-//     aray.geomID = -1;
-//     aray.primID = -1;
-//     aray.set_len(dist_limit);
-//     aray.tnear = 0.0;
-//     aray.set_dir(aray.ddir*-1);
-//     {
-//       RTCIntersectContext context;
-//       rtcInitIntersectContext(&context);
-//       rtcIntersect1(scene,&context,&*((RTCRay*)&aray));
-//       *((RTCRay*)&aray).hit.Ng_x = -*((RTCRay*)&aray).hit.Ng_x; // EMBREE_FIXME: only correct for triangles,quads, and subdivision surfaces
-//       *((RTCRay*)&aray).hit.Ng_y = -*((RTCRay*)&aray).hit.Ng_y;
-//       *((RTCRay*)&aray).hit.Ng_z = -*((RTCRay*)&aray).hit.Ng_z;
-//     }
-//     if (aray.num_hit == hits) { result = 0; return; }
-//     // inside/outside depends on the sum
-//     if      (0 < aray.sum)                                          result = 0; // pt is outside (for all vols)
-//     else if (0 > aray.sum)                                          result = 1; // pt is inside  (for all vols)
-//     else if (imp_comp && imp_comp == volume)                        result = 1;
-//     else                                                            result = 0;
-//   }
-
 }
 
-void RayTracingInterface::boundary_case(moab::EntityHandle volume,
-                                        int& result,
-                                        double u,
-                                        double v,
-                                        double w,
-                                        moab::EntityHandle facet,
-                                        moab::EntityHandle surface) {
-
+void
+RayTracingInterface::boundary_case(moab::EntityHandle volume,
+                                   int& result,
+                                   double u,
+                                   double v,
+                                   double w,
+                                   moab::EntityHandle facet,
+                                   moab::EntityHandle surface)
+{
   moab::EntityHandle rval;
 
+  // TODO: Improve this check for direction
   if (u <= 1.0 && v <= 1.0 && w <= 1.0) {
 
     Vec3da uvw(u, v, w);
@@ -736,6 +717,7 @@ void RayTracingInterface::boundary_case(moab::EntityHandle volume,
     rval = GTT->get_sense(surface, volume, sense_out);
     MB_CHK_SET_ERR_CONT(rval, "Failed to get the surface sense");
 
+    // vectors along two of the triangle edges
     coords[1] -= coords[0];
     coords[2] -= coords[0];
 
@@ -756,21 +738,21 @@ void RayTracingInterface::boundary_case(moab::EntityHandle volume,
   } else {
     result = -1;
   }
-
 }
 
-moab::ErrorCode RayTracingInterface::test_volume_boundary(const moab::EntityHandle volume,
-                                                          const moab::EntityHandle surface,
-                                                          const double xyz[3], const double uvw[3], int& result,
-                                                          const moab::GeomQueryTool::RayHistory* history) {
-
+moab::ErrorCode
+RayTracingInterface::test_volume_boundary(const moab::EntityHandle volume,
+                                          const moab::EntityHandle surface,
+                                          const double xyz[3],
+                                          const double uvw[3],
+                                          int& result,
+                                          const moab::GeomQueryTool::RayHistory* history)
+{
   moab::ErrorCode rval;
-  int dir;
 
+  int dir;
   moab::EntityHandle last_facet_hit = 0;
-  if (history) {
-    history->get_last_intersection(last_facet_hit);
-  }
+  if (history) { history->get_last_intersection(last_facet_hit); }
 
   if (last_facet_hit != 0) {
     boundary_case(volume, dir, uvw[0], uvw[1], uvw[2], last_facet_hit, surface);
@@ -786,26 +768,31 @@ moab::ErrorCode RayTracingInterface::test_volume_boundary(const moab::EntityHand
   return moab::MB_SUCCESS;
 }
 
-moab::ErrorCode RayTracingInterface::ray_fire(const moab::EntityHandle volume,
-                                              const double point[3],
-                                              const double dir[3],
-                                              moab::EntityHandle& next_surf,
-                                              double& next_surf_dist,
-                                              moab::GeomQueryTool::RayHistory* history,
-                                              double user_dist_limit,
-                                              int ray_orientation,
-                                              void* dum) {
+moab::ErrorCode
+RayTracingInterface::ray_fire(const moab::EntityHandle volume,
+                              const double point[3],
+                              const double dir[3],
+                              moab::EntityHandle& next_surf,
+                              double& next_surf_dist,
+                              moab::GeomQueryTool::RayHistory* history,
+                              double user_dist_limit,
+                              int ray_orientation,
+                              void* dum)
+{
 
   const double huge_val = std::numeric_limits<double>::max();
   double dist_limit = huge_val;
   if (user_dist_limit > 0) { dist_limit = user_dist_limit; }
 
-  next_surf = 0; next_surf_dist = huge_val;
+  next_surf = 0;
+  next_surf_dist = huge_val;
 
   RTCScene scene = scene_map[volume];
 
+  // struct that stores information about the ray and hit
   MBRayHit rayhit;
 
+  // set information for the ray
   MBRay& mbray  = rayhit.ray;
   mbray.set_org(point);
   mbray.set_dir(dir);
@@ -813,9 +800,10 @@ moab::ErrorCode RayTracingInterface::ray_fire(const moab::EntityHandle volume,
   mbray.set_len(dist_limit);
   mbray.rf_type = RayFireType::RF;
   mbray.orientation = ray_orientation;
-  mbray.mask = -1;
+  mbray.mask = -1; // no mask
   if (history) { mbray.rh = history; }
 
+  // set initial hit information (no geom or primitive)
   MBHit& mbhit = rayhit.hit;
   mbhit.geomID = RTC_INVALID_GEOMETRY_ID;
   mbhit.primID = RTC_INVALID_GEOMETRY_ID;
@@ -835,13 +823,14 @@ moab::ErrorCode RayTracingInterface::ray_fire(const moab::EntityHandle volume,
 
   MBRay& neg_ray = neg_rayhit.ray;
   neg_ray.set_org(point);
-  neg_ray.set_dir(-mbray.ddir);
+  neg_ray.set_dir(-mbray.ddir); // fire in the opposite direction
   neg_ray.tnear = 0.0;
   neg_ray.rf_type = RayFireType::RF;
-  neg_ray.orientation = -ray_orientation;
-  if (history) { neg_ray.rh = history; }
+  neg_ray.orientation = -ray_orientation; // opposite ray orientation to match flipped direction
   neg_ray.set_len(overlap_thickness);
+  if (history) { neg_ray.rh = history; }
 
+  // set initial hit information (no geom or primitive)
   MBHit& neg_hit = neg_rayhit.hit;
   neg_hit.geomID = RTC_INVALID_GEOMETRY_ID;
   neg_hit.primID = RTC_INVALID_GEOMETRY_ID;
@@ -877,7 +866,7 @@ moab::ErrorCode RayTracingInterface::ray_fire(const moab::EntityHandle volume,
     int result = 0;
     point_in_volume( nx_vol, point, result, dir, history );
     MB_CHK_SET_ERR_CONT(rval, "Point in volume query failed");
-    if (1==result) use_neg_intersection = true;
+    if (1 == result) use_neg_intersection = true;
   }
 
   if(use_neg_intersection && neg_hit.geomID != RTC_INVALID_GEOMETRY_ID) {
@@ -905,10 +894,12 @@ moab::ErrorCode RayTracingInterface::ray_fire(const moab::EntityHandle volume,
   return MB_SUCCESS;
 }
 
-moab::ErrorCode RayTracingInterface::get_vols(moab::Range& vols) {
+moab::ErrorCode
+RayTracingInterface::get_vols(moab::Range& vols)
+{
   moab::ErrorCode rval;
 
-  // retrieve vols
+  // retrieve vols using the geom tag
   moab::Tag geom_tag;
   rval = MBI->tag_get_handle("GEOM_DIMENSION", geom_tag);
   MB_CHK_SET_ERR(rval, "Failed to get the geometry dimension tag");
@@ -921,6 +912,7 @@ moab::ErrorCode RayTracingInterface::get_vols(moab::Range& vols) {
   return moab::MB_SUCCESS;
 }
 
-bool RayTracingInterface::has_bvh() const {
+bool
+RayTracingInterface::has_bvh() const {
   return scene_map.size() > 0;
 }
