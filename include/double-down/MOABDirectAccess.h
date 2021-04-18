@@ -3,18 +3,20 @@
 
 #include <memory>
 
+// MOAB
 #include "moab/Core.hpp"
 #include "moab/CartVect.hpp"
 
+// Double-down
 #include "Vec3da.h"
-
 
 using namespace moab;
 
+/*! Class to manage direct access of triangle connectivity and coordinates */
 class MBDirectAccess {
 
-  // constructor
 public:
+  // constructor
   MBDirectAccess(Interface* mbi);
 
   //! \brief Initialize internal structures
@@ -26,6 +28,7 @@ public:
   //! \brief Update internal data structures to account for changes in the MOAB instance
   void update();
 
+  //! \brief Check that a triangle is part of the managed coordinates here
   inline bool accessible(EntityHandle tri) {
     // determine the correct index to use
     int idx = 0;
@@ -39,6 +42,7 @@ public:
     return true;
   }
 
+  //! \brief Get the coordinates of a triangle as MOAB CartVect's
   inline std::array<moab::CartVect, 3> get_mb_coords(const EntityHandle& tri) {
 
     // determine the correct index to use
@@ -62,6 +66,7 @@ public:
     return {v0, v1, v2};
   }
 
+  //! \brief Get the coordinates of a triangle as Vec3da's
   inline std::array<Vec3da, 3> get_coords(const EntityHandle& tri) {
 
     // determine the correct index to use
@@ -86,23 +91,23 @@ public:
   }
 
   // Accessors
+  //! \brief return the number of elements being managed
   inline int n_elements() { return num_elements_; }
+  //! \brief return the number of vertices being managed
   inline int n_vertices() { return num_vertices_; }
+  //! \brief return the stride between elements in the coordinate arrays
   inline int stride() { return element_stride_;}
 
 private:
-  Interface* mbi {nullptr};
-
-  int num_elements_ {-1};
-  int num_vertices_ {-1};
-
-  int element_stride_ {-1};
-
-  std::vector<std::pair<EntityHandle, size_t>> first_elements_;
-
-  std::vector<const EntityHandle*> vconn_;
-
-  std::vector<double*> tx_, ty_, tz_;
+  Interface* mbi {nullptr}; //!< MOAB instance for the managed data
+  int num_elements_ {-1}; //!< Number of elements in the manager
+  int num_vertices_ {-1}; //!< Number of vertices in the manager
+  int element_stride_ {-1}; //!< Number of vertices used by each element
+  std::vector<std::pair<EntityHandle, size_t>> first_elements_; //!< Pairs of first element and length pairs for contiguous blocks of memory
+  std::vector<const EntityHandle*> vconn_; //!< Storage array(s) for the connectivity array
+  std::vector<double*> tx_; //!< Storage array(s) for vertex x coordinates
+  std::vector<double*> ty_; //!< Storage array(s) for vertex y coordinates
+  std::vector<double*> tz_; //!< Storage array(s) for vertex z coordinates
 };
 
 #endif // include guard

@@ -5,10 +5,7 @@
 
 #include "double-down/MOABDirectAccess.h"
 
-MBDirectAccess::MBDirectAccess(Interface* mbi) : mbi(mbi)
-{
-  setup();
-}
+MBDirectAccess::MBDirectAccess(Interface* mbi) : mbi(mbi) { setup(); }
 
 void
 MBDirectAccess::setup() {
@@ -31,11 +28,11 @@ MBDirectAccess::setup() {
     rval = mbi->connect_iterate(tris_it, tris.end(), conntmp, element_stride_, n_elements);
     MB_CHK_SET_ERR_CONT(rval, "Failed to get direct access to triangle elements");
 
-    // set const pointers
+    // set const pointers for the connectivity array and add first element/length pair to the set of first elements
     vconn_.push_back(conntmp);
     first_elements_.push_back({*tris_it, n_elements});
 
-    // move iterator forward
+    // move iterator forward by the number of triangles in this contiguous memory block
     tris_it += n_elements;
   }
 
@@ -48,16 +45,19 @@ MBDirectAccess::setup() {
   moab::Range::iterator verts_it = verts.begin();
   while (verts_it != verts.end()) {
     // set vertex coordinate pointers
-    double * xtmp, * ytmp, * ztmp;
+    double* xtmp;
+    double* ytmp;
+    double* ztmp;
     int n_vertices;
     rval = mbi->coords_iterate(verts_it, verts.end(), xtmp, ytmp, ztmp, n_vertices);
     MB_CHK_SET_ERR_CONT(rval, "Failed to get direct access to vertex elements");
 
+    // add the vertex coordinate arrays to their corresponding vector of array pointers
     tx_.push_back(&(*xtmp));
     ty_.push_back(&(*ytmp));
     tz_.push_back(&(*ztmp));
 
-    // move iterator forward
+    // move iterator forward by the number of vertices in this contiguous memory block
     verts_it += n_vertices;
   }
 }
