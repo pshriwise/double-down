@@ -196,8 +196,8 @@ class RayTracingInterface {
   //! \param llc x,y,z coordinates for the lower left corner of the box.
   //! \param urc x,y,z coordinates for the upper right corner of the box.
   moab::ErrorCode get_bbox(moab::EntityHandle volume,
-                           std::array<double, 3>& llc[3],
-                           std::array<double, 3>& urc[3]);
+                           std::array<double, 3>& llc,
+                           std::array<double, 3>& urc);
 
   //! \brief Get a MOAB Range of all the volumes in the RayTracingInterface.
   //! \param vols Set to the range of volumes in the RayTracingInterface.
