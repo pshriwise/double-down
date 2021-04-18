@@ -11,6 +11,7 @@
 // Double-down
 #include "ray.h"
 
+/*! Extension of the single/double precision ray hit to include MOAB handles */
 struct MBHit : RTCDHit {
   inline MBHit() {
     geomID = RTC_INVALID_GEOMETRY_ID;
@@ -19,10 +20,12 @@ struct MBHit : RTCDHit {
     prim_handle = 0;
   }
 
-  // MOAB/DAGMC-specific information
-  moab::EntityHandle surf_handle, prim_handle;
+  // Member variables
+  moab::EntityHandle surf_handle; //!< Handle of the MOAB surface hit
+  moab::EntityHandle prim_handle; //!< Handle of the MOAB triangle hit
 };
 
+/*! Extension of the single/couble precision ray to include an orientation and RayHistory */
 struct MBRay : RTCDRay {
   inline MBRay() {
     tnear = 0.0;
@@ -31,20 +34,25 @@ struct MBRay : RTCDRay {
     orientation = 0;
     rh = NULL;
   }
-  int orientation;
-  const moab::GeomQueryTool::RayHistory* rh;
+
+  // Member variables
+  int orientation; //!< Ray direction vs. triangle normal orientation to count as a hit (1 for forward, -1 for reverse)
+  const moab::GeomQueryTool::RayHistory* rh; //!< RayHistory containing triangles to ignore
 };
 
+/*! Struct combining the MBRay and MBHit into a struct that can be passed to Embree's rtcIntersect */
 struct MBRayHit {
   struct MBRay ray;
   struct MBHit hit;
 
+  //! \brief Compute the dot product of the ray direction and triangle normal for the current hit
   double dot_prod() {
     return dot(ray.ddir, hit.dNg);
   }
 
 };
 
+/*! Extension of the MOAB ray to accumulate all triangle hits for robust point containment checks */
 struct MBRayAccumulate : MBRay {
   inline MBRayAccumulate() {
     tnear = 0.0;
@@ -54,9 +62,11 @@ struct MBRayAccumulate : MBRay {
     num_hit = 0;
   }
 
-  int sum, num_hit;
+  int sum; //!< Current sum of the entering/exiting intersection results (+1 for entering, -1 for exiting)
+  int num_hit; //!< Number of triangles intersected
 };
 
+/*! Struct combining MBRayAccumulate and MBHit that can be passed to Embree's rtcIntersect */
 struct MBRayHitAccumulate {
   struct MBRayAccumulate ray;
   struct MBHit hit;
@@ -65,7 +75,6 @@ struct MBRayHitAccumulate {
     return dot(ray.ddir, hit.dNg);
   }
 };
-
 
 double dot_prod(RTCDRay ray);
 
