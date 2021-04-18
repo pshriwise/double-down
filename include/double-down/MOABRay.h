@@ -8,7 +8,7 @@
 // MOAB
 #include "moab/GeomQueryTool.hpp"
 
-// local
+// Double-down
 #include "ray.h"
 
 struct MBHit : RTCDHit {
@@ -30,11 +30,6 @@ struct MBRay : RTCDRay {
     mask  = -1;
     orientation = 0;
     rh = NULL;
-    /* geomID = RTC_INVALID_GEOMETRY_ID; */
-    /* primID = RTC_INVALID_GEOMETRY_ID; */
-    /* surf_handle = 0; */
-    /* prim_handle = 0; */
-
   }
   int orientation;
   const moab::GeomQueryTool::RayHistory* rh;
