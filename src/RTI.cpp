@@ -87,8 +87,8 @@ RayTracingInterface::get_obb(moab::EntityHandle volume,
 
 moab::ErrorCode
 RayTracingInterface::get_bbox(moab::EntityHandle volume,
-                              std::array<double, 3>& llc[3],
-                              std::array<double, 3>& urc[3])
+                              std::array<double, 3>& llc,
+                              std::array<double, 3>& urc)
 {
   RTCBounds bounds;
 
