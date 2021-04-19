@@ -113,6 +113,7 @@ class RayTracingInterface {
                                   const moab::GeomQueryTool::RayHistory *history,
                                   double overlap_tol = 0.0);
 
+
   //! \brief A slower, robust method for point containment of location \p xyz in \p volume.
   //! This method fires infinitely long rays in opposing directions and collects all
   //! intersections along the ray. The number of exiting/entering intersections are
@@ -121,7 +122,7 @@ class RayTracingInterface {
   //! \param xyz Location to check.
   //! \param result Result of the query (1 if inside, 0 if outside).
   moab::ErrorCode point_in_volume_slow(moab::EntityHandle volume,
-                                       const std::array<double, 3> xyz,
+                                       const double xyz[3],
                                        int& result);
 
   //! \brief Calculates the solid angle of a polygon, \p face, with respect to \p point.

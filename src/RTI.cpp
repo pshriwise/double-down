@@ -66,7 +66,7 @@ RayTracingInterface::get_obb(moab::EntityHandle volume,
 {
   std::array<double, 3> llc;
   std::array<double, 3> urc;
-  moab::ErrorCode rval = get_bbox(volume, llc.data(), urc.data());
+  moab::ErrorCode rval = get_bbox(volume, llc, urc);
   MB_CHK_SET_ERR(rval, "Failed to get bounding box");
 
   center[0] = 0.5 * (llc[0] + urc[0]);
@@ -244,8 +244,8 @@ void RayTracingInterface::deleteBVH(moab::EntityHandle volume)
 
 moab::ErrorCode
 RayTracingInterface::get_normal(moab::EntityHandle surface,
-                                const std::array<double, 3> loc,
-                                std::array<double , 3> angle,
+                                const double loc[3],
+                                double angle[3],
                                 const moab::GeomQueryTool::RayHistory* history)
 {
   moab::ErrorCode rval;
@@ -389,7 +389,7 @@ RayTracingInterface::measure_volume(moab::EntityHandle volume,
 
   for (unsigned i = 0; i < surfaces.size(); ++i) {
     // skip non-manifold surfaces
-    if (!senses[i]) { continue };
+    if (!senses[i]) { continue; }
 
     // get triangles in surface
     moab::Range triangles;
@@ -615,7 +615,7 @@ RayTracingInterface::point_in_volume_slow(moab::EntityHandle volume,
 
 moab::ErrorCode
 RayTracingInterface::point_in_volume(const moab::EntityHandle volume,
-                                     const std::array<double, 3> xyz,
+                                     const double xyz[3],
                                      int& result,
                                      const double *uvw,
                                      const moab::GeomQueryTool::RayHistory *history,
@@ -627,15 +627,9 @@ RayTracingInterface::point_in_volume(const moab::EntityHandle volume,
   RTCScene scene = scene_map[volume];
 
   // use the direction if provided, otherwise use any random direction
-  double dir[3];
+  std::array<double, 3> dir{0.5, 0.5, 0.5};
   if (uvw) {
-    dir[0] = uvw[0];
-    dir[1] = uvw[1];
-    dir[2] = uvw[2];
-  } else {
-    dir[0] = 0.5;
-    dir[1] = 0.5;
-    dir[2] = 0.5;
+    dir = {uvw[0], uvw[1], uvw[2]};
   }
 
   // struct that holds all info about the intersection
@@ -644,7 +638,7 @@ RayTracingInterface::point_in_volume(const moab::EntityHandle volume,
   // set information about the ray
   MBRay& mbray = mbrayhit.ray;
   mbray.set_org(xyz);
-  mbray.set_dir(dir);
+  mbray.set_dir(dir.data());
   mbray.rf_type = RayFireType::PIV;
   mbray.orientation = 1;
   mbray.mask = -1; // no mask
@@ -670,7 +664,7 @@ RayTracingInterface::point_in_volume(const moab::EntityHandle volume,
     mbhit.Ng_z = -mbhit.Ng_z;
   }
 
-  Vec3da ray_dir(dir);
+  Vec3da ray_dir(dir.data());
   Vec3da tri_norm(mbrayhit.hit.dNg[0], mbrayhit.hit.dNg[1], mbrayhit.hit.dNg[2]);
 
   // use the triangle normal vs. ray direction to determine if this is an entering

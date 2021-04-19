@@ -168,7 +168,7 @@ double DblTriClosestFunc(const DblTri& tri, const double loc[3]) {
   moab::CartVect location(loc[0], loc[1], loc[2]);
   moab::CartVect result;
   // compute the nearest location on the triangle
-  moab::GeomUtil::closest_location_on_tri(location, coords.array(), result);
+  moab::GeomUtil::closest_location_on_tri(location, coords.data(), result);
   // return the distance to the triangle location
   return (result - location).length();
 }
