@@ -7,7 +7,6 @@
 
 // Double-down
 #include "double-down/RTI.hpp"
-#include "double-down/AABB.h"
 
 void error(void* dum, RTCError code, const char* str) {
   if (code != RTC_ERROR_NONE) {

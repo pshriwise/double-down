@@ -184,8 +184,8 @@ class RayTracingInterface {
   //! \param volume MOAB EntityHandle of the volume.
   //! \param center Coordinates for the center of the bounding box.
   //! \param axis0 Scaled vector from the center to the edge of the box along axis 0. (Always along x-axis)
-  //! \param axis1 Scaled vector from the center to the edge of the box along axis 1. (Always along x-axis)
-  //! \param axis2 Scaled vector from the center to the edge of the box along axis 2. (Always along x-axis)
+  //! \param axis1 Scaled vector from the center to the edge of the box along axis 1. (Always along y-axis)
+  //! \param axis2 Scaled vector from the center to the edge of the box along axis 2. (Always along z-axis)
   moab::ErrorCode get_obb(moab::EntityHandle volume,
                           std::array<double, 3>& center,
                           std::array<double, 3>& axis0,

@@ -17,8 +17,6 @@ use with the `Direct Accelerated Geometry Monte Carlo (DAGMC) <https://svalinn.g
    :maxdepth: 2
    :caption: Contents:
 
-
-
 Indices and tables
 ==================
 
