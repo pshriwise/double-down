@@ -3,8 +3,6 @@ project( DBLDOWN )
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_SKIP_BUILD_RPATH FALSE)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 
 # Default to a release build
 set(default_build_type "Release")
@@ -46,15 +44,18 @@ MESSAGE ( STATUS "EMBREE_LIBRARY is " ${EMBREE_LIBRARY} )
 MESSAGE ( STATUS "EMBREE_INCLUDE_DIRS is " ${EMBREE_INCLUDE_DIRS} )
 INCLUDE_DIRECTORIES( ${EMBREE_INCLUDE_DIRS} )
 
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 # add library
 add_library( dd SHARED "src/RTI.cpp" "src/primitives.cpp" "src/MOABRay.cpp" "src/MOABDirectAccess.cpp")
-set_target_properties(dd PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
-set_target_properties(dd PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib )
 
 target_include_directories( dd INTERFACE "${CMAKE_INSTALL_PREFIX}/include" ${EMBREE_INCLUDE_DIRS})
 target_link_libraries( dd ${MOAB_LIBRARIES} ${EMBREE_LIBRARY} )
-set_target_properties(dd PROPERTIES INSTALL_RPATH "${MOAB_LIBRARY_DIRS}")
-set_target_properties(dd PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+set_target_properties(dd PROPERTIES INSTALL_RPATH "${MOAB_LIBRARY_DIRS};${EMBREE_LIBRARY_DIR}")
 
 install( TARGETS dd
          EXPORT ddTargets

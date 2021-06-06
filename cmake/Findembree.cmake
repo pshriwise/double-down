@@ -57,7 +57,10 @@ if (NOT DEFINED EMBREE_CMAKE_CONFIG)
   message(FATAL_ERROR "Could not find the Embree CMake configuration file.")
 endif()
 
-
 message(STATUS "Found EMBREE in ${EMBREE_CMAKE_CONFIG}")
 
 include(${EMBREE_CMAKE_CONFIG}/embree-config.cmake)
+
+# this needs to be set after EMBREE_ROOT_DIR gets set in Embree's CMake config file
+set(EMBREE_LIBRARY_DIR "${EMBREE_ROOT_DIR}/lib")
+message(STATUS "Embree library dir: ${EMBREE_LIBRARY_DIR}")
