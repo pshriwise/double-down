@@ -103,6 +103,27 @@ RayTracingInterface::get_bbox(moab::EntityHandle volume,
   return moab::MB_SUCCESS;
 }
 
+moab::ErrorCode
+RayTracingInterface::get_bbox(moab::EntityHandle volume,
+                              double llc[3],
+                              double urc[3])
+{
+  std::array<double, 3> lc_inner;
+  std::array<double, 3> uc_inner;
+
+  moab::ErrorCode rval = this->get_bbox(volume, lc_inner, uc_inner);
+
+  llc[0] = lc_inner[0];
+  llc[1] = lc_inner[1];
+  llc[2] = lc_inner[2];
+  urc[0] = uc_inner[0];
+  urc[1] = uc_inner[1];
+  urc[2] = uc_inner[2];
+
+  return rval;
+}
+
+
 
 moab::ErrorCode
 RayTracingInterface::allocateTriangleBuffer(moab::EntityHandle volume)
