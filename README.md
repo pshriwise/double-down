@@ -1,4 +1,4 @@
-double-down : A double precision interface to Embree
+# double-down : A double precision interface to Embree
 
 [![CI Badge](https://github.com/pshriwise/double-down/workflows/Double%20Down%20CI/badge.svg)](https://github.com/pshriwise/double-down/actions?query=workflow%3A%22Double+Down+CI%22)
 
