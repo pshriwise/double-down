@@ -4,7 +4,7 @@
 #include <ctime>
 
 #include "moab/ProgOptions.hpp"
-#include "RTI.hpp"
+#include "double-down/RTI.hpp"
 
 static const double PI = acos(-1.0);
 static const double denom = 1.0 / ((double) RAND_MAX);
@@ -32,10 +32,13 @@ int main(int argc, char** argv) {
   std::cout << "AVX2 Enabled" << std::endl;
 #endif
 
-  RayTracingInterface* RTI = new RayTracingInterface();
+  std::shared_ptr<RayTracingInterface> RTI{new RayTracingInterface()};
 
   moab::ErrorCode rval;
-  rval = RTI->init(filename);
+  rval = RTI->load_file(filename);
+  MB_CHK_SET_ERR(rval, "Failed to load file: " + filename);
+
+  rval = RTI->init();
   MB_CHK_SET_ERR(rval, "Failed to initialize the RayTracingInterface.");
 
   moab::Range vols;
@@ -86,6 +89,5 @@ int main(int argc, char** argv) {
   std::cout << "Total time in Ray Fire: " << total_sec << " sec" << std::endl;
   std::cout << "Total time per Ray Fire: " << per_ray << " sec" << std::endl;
 
-  delete RTI;
   return 0;
 }
