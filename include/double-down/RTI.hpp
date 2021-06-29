@@ -76,7 +76,7 @@ class RayTracingInterface {
   RayTracingInterface(std::shared_ptr<moab::GeomTopoTool> gtt);
 
   //! \brief Default constructor, both a MOAB instance and GeomTopoTool object will be created internally.
-  RayTracingInterface() : MBI(new moab::Core()), GTT(std::make_shared<moab::GeomTopoTool>(MBI)) {  }
+  RayTracingInterface() : MBI(new moab::Core()), GTT(std::make_shared<moab::GeomTopoTool>(MBI)) {}
 
   //! \brief Destructor. Clears all storage and removes all Embree scenes and geometries.
   ~RayTracingInterface() {

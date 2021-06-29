@@ -4,7 +4,6 @@
 #include <ctime>
 
 #include "moab/ProgOptions.hpp"
-
 #include "double-down/RTI.hpp"
 
 static const double PI = acos(-1.0);
@@ -33,7 +32,7 @@ int main(int argc, char** argv) {
   std::cout << "AVX2 Enabled" << std::endl;
 #endif
 
-  RayTracingInterface* RTI = new RayTracingInterface();
+  std::shared_ptr<RayTracingInterface> RTI{new RayTracingInterface()};
 
   moab::ErrorCode rval;
   rval = RTI->load_file(filename);
@@ -90,6 +89,5 @@ int main(int argc, char** argv) {
   std::cout << "Total time in Ray Fire: " << total_sec << " sec" << std::endl;
   std::cout << "Total time per Ray Fire: " << per_ray << " sec" << std::endl;
 
-  delete RTI;
   return 0;
 }

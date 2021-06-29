@@ -22,19 +22,15 @@ int main(int argc, char** argv) {
 
   po.parseCommandLine(argc, argv);
 
-  // create new MOAB instance
-  moab::Interface* MBI = new moab::Core();
+  // create new ray tracing interface
+  std::unique_ptr<RayTracingInterface> RTI{new RayTracingInterface()};
 
   moab::ErrorCode rval;
-
-  rval = MBI->load_file(po.getReqArg<std::string>("filename").c_str());
+  rval = RTI->load_file(po.getReqArg<std::string>("filename").c_str());
   MB_CHK_SET_ERR(rval, "Failed to load test file");
-
-  std::unique_ptr<RayTracingInterface> RTI(new RayTracingInterface(MBI));
 
   rval = RTI->init();
   MB_CHK_SET_ERR(rval, "Failed to initialize the RTI.");
-
 
   moab::EntityHandle vol = RTI->gttool()->entity_by_id(3, po.getReqArg<int>("volume_id"));
 
