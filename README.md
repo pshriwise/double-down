@@ -1,5 +1,7 @@
 # double-down : A double precision interface to Embree
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 [![CI Badge](https://github.com/pshriwise/double-down/workflows/Double%20Down%20CI/badge.svg)](https://github.com/pshriwise/double-down/actions?query=workflow%3A%22Double+Down+CI%22)
 
 
@@ -34,4 +36,3 @@ make install
 ## Other Notes
 
 double-down is currently underdevelopment targeting Embree Version 3.6.1.
-
