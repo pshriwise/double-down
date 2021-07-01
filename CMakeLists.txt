@@ -35,7 +35,7 @@ endif()
 
 # Set install locations
 set( DD_BINARY_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/tools" )
-set( DD_INCLUDE_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/include/double-down" )
+set( DD_INCLUDE_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/include/double_down" )
 set( DD_LIBRARY_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/lib" )
 set( DD_CMAKE_CONFIG_LOCATION "${DD_LIBRARY_INSTALL_LOCATION}/cmake")
 
@@ -89,4 +89,3 @@ add_subdirectory(docs)
 add_subdirectory(tools)
 add_subdirectory(test)
 add_subdirectory(test_files)
-
