@@ -12,7 +12,18 @@ Double-down's documentation can be found [here](https://double-down.readthedocs.
 
 ## Summary
 
-`double-down` is a double precision interface to Embree via the Mesh Oriented dAtaBase (MOAB). Geometric primitives (triangle elements) are stored in MOAB. Custom primitive types are defined using Embree's user geometry interface where they interface with the MOAB instance to provide robust bounding values for the triangles as well as double precision intersection methods. Ray values come in and out of the interface in double precision, making them useful for scientific purposes while applying the speed provided by the dedicated team of Intel developers who have created Embree.
+`double-down` is a double precision interface to Embree via the Mesh Oriented
+dAtaBase (MOAB).
+
+Geometric primitives (triangle elements) with double precision vertices are
+stored in MOAB. Custom primitive types are defined in Embree as user-defined
+geometry primitives.  These primitives interface with the MOAB instance to
+provide robust bounding boxes and double precision intersection methods for
+rays.
+
+Ray values come in and out of the interface in double precision, making them
+useful for scientific purposes while maintaining the performance provided by the
+dedicated Intel developer team behind Embree.
 
 ## Installation
 
