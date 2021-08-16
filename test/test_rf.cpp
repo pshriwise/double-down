@@ -39,5 +39,15 @@ int main() {
   if (dist == 0.0) { return 1; }
   if (surf == 0) { return 1; }
 
+  // check bounding box return
+  std::array<double, 3> llc, urc;
+  RTI->get_bbox(sphere_vol, llc, urc);
+
+  double sphere_bound = 10.0;
+  for (int i = 0; i < 3; i++) {
+    if (llc[i] >= -sphere_bound) { return 1; }
+    if (urc[i] <= sphere_bound) { return 1;}
+  }
+
   return 0;
 }

@@ -192,6 +192,13 @@ class RayTracingInterface {
                           std::array<double, 3>& axis1,
                           std::array<double, 3>& axis2);
 
+
+  moab::ErrorCode get_obb(moab::EntityHandle volume,
+                          double center[3],
+                          double axis0[3],
+                          double axis1[3],
+                          double axis2[3]);
+
   //! \brief Get an axis-aligned bounding bos for the specified \p volume.
   //! \param volume MOAB EntityHandle of the volume.
   //! \param llc x,y,z coordinates for the lower left corner of the box.

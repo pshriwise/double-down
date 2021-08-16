@@ -58,6 +58,22 @@ moab::ErrorCode RayTracingInterface::load_file(std::string filename) {
 
 moab::ErrorCode
 RayTracingInterface::get_obb(moab::EntityHandle volume,
+                             double center[3],
+                             double axis0[3],
+                             double axis1[3],
+                             double axis2[3])
+{
+  std::array<double, 3> c, ax0, ax1, ax2;
+  moab::ErrorCode rval = get_obb(volume, c, ax0, ax1, ax2);
+  center[0] = c[0]; center[1] = c[1]; center[2] = c[2];
+  axis0[0] = ax0[0]; axis0[1] = ax0[1]; axis0[2] = ax0[2];
+  axis1[0] = ax1[0]; axis1[1] = ax1[1]; axis1[2] = ax1[2];
+  axis2[0] = ax2[0]; axis2[1] = ax2[1]; axis2[2] = ax2[2];
+  return rval;
+}
+
+moab::ErrorCode
+RayTracingInterface::get_obb(moab::EntityHandle volume,
                              std::array<double, 3>& center,
                              std::array<double, 3>& axis0,
                              std::array<double, 3>& axis1,
