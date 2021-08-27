@@ -1,6 +1,10 @@
 name: Double Down CI
 
 on:
+
+  # allows manual trigger of workflow in GH
+  workflow_dispatch:
+
   push:
     branches:
     - main
