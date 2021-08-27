@@ -1,6 +1,9 @@
 name: Double Down CI
 
 on:
+  # allow manual trigger of workflow
+  workflow_dispatch:
+
   push:
     branches:
     - main
