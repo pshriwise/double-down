@@ -32,6 +32,7 @@ Table of Contents
 
     self
     api/index
+    methodology/index
 
 Development Roadmap
 ===================
