@@ -71,11 +71,11 @@ precision approach as in the double precision case. This is possible so long as
 the set of BVH nodes with positive ray-box intersections in single precision
 contains the set of nodes with positive intersection checks in double precision.
 To ensure that this is true, single precision bounding boxes are extended by
-some value :math:\epsilon. The artificial expansion of these boxes is kept to a
+some value :math:`\epsilon`. The artificial expansion of these boxes is kept to a
 minimum, only set large enough to maintain robustness in the kernel, to avoid
 increasing the overlap of sibling bounding boxes and superfluous intersection
 checks --- a known issue that can degrade the performance of BVH
-traversal.
+traversal. Verification of this approach can be found in shriwise_2018_ans_.
 
 .. _shriwise_2015_ans: https://epubs.ans.org/?a=37943
 .. _shriwise_2018_ans: https://epubs.ans.org/?a=44301
