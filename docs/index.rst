@@ -31,8 +31,8 @@ Table of Contents
     :maxdepth: 2
 
     self
-    api/index
     methodology/index
+    api/index
 
 Development Roadmap
 ===================
