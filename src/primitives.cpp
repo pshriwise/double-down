@@ -22,12 +22,12 @@ void intersectionFilter(void* ptr, RTCDRayHit &rayhit)
 void DblTriBounds(const RTCBoundsFunctionArguments* args)
 {
   // get the array of DblTri's stored on the geometry
-  void* tris_i = args->geometryUserPtr;
+  const UserData* user_data = (const UserData*) args->geometryUserPtr;
   // referencde to the returned triangle bounds
   RTCBounds& bounds_o = *args->bounds_o;
 
   // convert the void user data pointer to the DblTri pointer
-  const DblTri* tris = (const DblTri*) tris_i;
+  const DblTri* tris = (const DblTri*) user_data->tri_ptr;
   // select the DblTri in question based on the primitive ID
   const DblTri& this_tri = tris[args->primID];
 
@@ -35,14 +35,14 @@ void DblTriBounds(const RTCBoundsFunctionArguments* args)
   MBDirectAccess* mdam = (MBDirectAccess*) this_tri.mdam;
 
   // compute the bounding box using the direct access manager and the triangle's handle
-  bounds_o = DblTriBounds(mdam, this_tri.handle);
+  bounds_o = DblTriBounds(mdam, this_tri.handle, user_data->bump);
 }
 
 void DblTriIntersectFunc(RTCIntersectFunctionNArguments* args) {
   // get the array of DblTri's stored on the geometry
-  void* tris_i = args->geometryUserPtr;
+  const UserData* user_data = (const UserData*) args->geometryUserPtr;
   // convert the void user data pointer to the DblTri pointer
-  const DblTri* tris = (const DblTri*) tris_i;
+  const DblTri* tris = (const DblTri*) user_data->tri_ptr;
   // select the DblTri in question based on the primitive ID
   const DblTri& this_tri = tris[args->primID];
 
@@ -56,7 +56,6 @@ void DblTriIntersectFunc(RTCIntersectFunctionNArguments* args) {
 
   // get the triangle coordinates from the direct access manager
   std::array<moab::CartVect, 3> coords = mdam->get_mb_coords(this_tri.handle);
-
 
   double dist; // local variable for the distance to the triangle intersection
   // convert the ray origin and directory to MOAB CartVect
@@ -101,9 +100,9 @@ void DblTriIntersectFunc(RTCIntersectFunctionNArguments* args) {
 
 void DblTriOccludedFunc(RTCOccludedFunctionNArguments* args) {
   // get the array of DblTri's stored on the geometry
-  void* tris_i = args->geometryUserPtr;
+  const UserData* user_data = (const UserData*) args->geometryUserPtr;
   // convert the void user data pointer to the DblTri pointer
-  const DblTri* tris = (const DblTri*) tris_i;
+  const DblTri* tris = (const DblTri*) user_data->tri_ptr;
   // select the DblTri in question based on the primitive ID
   const DblTri& this_tri = tris[args->primID];
 
@@ -140,9 +139,9 @@ bool DblTriPointQueryFunc(RTCPointQueryFunctionArguments* args) {
   RTCGeometry g = rtcGetGeometry(*(RTCScene*)args->userPtr, args->geomID);
 
   // get the array of DblTri's stored on the geometry
-  void* tris_i = rtcGetGeometryUserData(g);
+  const UserData* user_data = (const UserData*) rtcGetGeometryUserData(g);
   // convert the void user data pointer to the DblTri pointer
-  const DblTri* tris = (const DblTri*) tris_i;
+  const DblTri* tris = (const DblTri*) user_data->tri_ptr;
   // select the DblTri in question based on the primitive ID
   const DblTri& this_tri = tris[args->primID];
   // compute the distance to the nearest point on the triangle

@@ -22,13 +22,18 @@ struct DblTri {
   int sense;
 };
 
+/*! Structure for linking primitive data with surfaces */
+struct UserData {
+    double bump; //!< bounding box bump value for this set of triangles
+    DblTri* tri_ptr; //!< Set of triangles in the buffer
+};
+
 //! \brief Function returning the extended bounds of a double precision MOAB triangle
-inline RTCBounds DblTriBounds(MBDirectAccess* mdam, moab::EntityHandle tri_handle) {
+inline RTCBounds DblTriBounds(MBDirectAccess* mdam,
+                              moab::EntityHandle tri_handle,
+                              double bump_val = 5e-03) {
 
   std::array<Vec3da, 3> coords = mdam->get_coords(tri_handle);
-
-  // amount by which to extend the bounding box of the triangle
-  double bump_val = 5e-03;
 
   RTCBounds bounds_o;
   bounds_o.lower_x = std::min(coords[0][0],std::min(coords[1][0],coords[2][0]));

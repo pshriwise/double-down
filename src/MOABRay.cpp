@@ -67,7 +67,7 @@ void count_hits(MBRayHitAccumulate* rayhit) {
 
 void MBDblTriIntersectFunc(RTCIntersectFunctionNArguments* args) {
 
-  void* tris_i = args->geometryUserPtr;
+  const UserData* user_data = (const UserData*) args->geometryUserPtr;
   size_t item = args->primID;
   MBRayHit* rayhit = (MBRayHit*)args->rayhit;
   MBRay& ray = rayhit->ray;
@@ -83,7 +83,7 @@ void MBDblTriIntersectFunc(RTCIntersectFunctionNArguments* args) {
     return;
   }
 
-  const DblTri* tris = (const DblTri*) tris_i;
+  const DblTri* tris = (const DblTri*) user_data->tri_ptr;
   const DblTri& this_tri = tris[item];
 
   hit.prim_handle = this_tri.handle;

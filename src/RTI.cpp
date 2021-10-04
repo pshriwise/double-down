@@ -7,6 +7,8 @@
 
 // Double-down
 #include "double-down/RTI.hpp"
+#include "double-down/constants.h"
+
 
 void error(void* dum, RTCError code, const char* str) {
   if (code != RTC_ERROR_NONE) {
@@ -188,7 +190,7 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle volume)
   scene_map[volume] = scene;
 
   auto& tri_buffer = buffer_storage.retrieve_buffer(volume);
-  auto emtris = tri_buffer.data();
+  DblTri* emtris = tri_buffer.data();
 
   // get volume surfaces
   moab::Range surfs;
@@ -198,6 +200,40 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle volume)
   // make sure that all triangles are available
   // before constructing the BVH
   mdam->update();
+
+  // manually determine the bounding box of the volume
+  std::array<double, 3> min = {PosInfTy(), PosInfTy(), PosInfTy()};
+  std::array<double, 3> max = {NegInfTy(), NegInfTy(), NegInfTy()};
+
+  for (moab::Range::iterator j = surfs.begin(); j != surfs.end(); j++) {
+    moab::Range surf_verts;
+    rval = MBI->get_entities_by_type(*j, moab::MBTRI, surf_verts);
+    MB_CHK_SET_ERR(rval, "Failed to get surface vertices");
+    std::vector<moab::CartVect> coords(surf_verts.size());
+    rval = MBI->get_coords(surf_verts, coords.data()->array());
+    MB_CHK_SET_ERR(rval, "Failed to get surface vertex coords");
+
+    for (const auto& coord : coords) {
+      // update min
+      min[0] = std::min(min[0], coord[0]);
+      min[1] = std::min(min[1], coord[1]);
+      min[2] = std::min(min[2], coord[2]);
+      // update max
+      max[0] = std::max(max[0], coord[0]);
+      max[1] = std::max(max[1], coord[1]);
+      max[2] = std::max(max[2], coord[2]);
+    }
+  }
+
+  // find the maximum distance a ray could possibly travel
+  // (diagonal chord length across the box)
+  double dx = max[0] - min[0];
+  double dy = max[1] - min[1];
+  double dz = max[2] - min[2];
+
+  double dmax = std::sqrt(3) * std::sqrt(dx*dx + dy*dy + dz*dz) * std::pow(10, -std::numeric_limits<float>::digits10);
+
+  std::cout << "Max distance: " << dmax << std::endl;
 
   // index to keep track of where we're adding triangles in the storage buffer
   int buffer_start = 0;
@@ -227,10 +263,17 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle volume)
     rtcSetGeometryTimeStepCount(geom_0,1);
 
     // get the pointer into the buffer at the right location
+    // for this surface
     DblTri* buff_ptr = emtris + buffer_start;
 
+    UserData udata;
+    udata.bump = dmax;
+    udata.tri_ptr = buff_ptr;
+
+    data_ptr_map[geom_0] = udata;
+
     // set the data for this Embree geometry using that pointer
-    rtcSetGeometryUserData(geom_0, buff_ptr);
+    rtcSetGeometryUserData(geom_0, &data_ptr_map[geom_0]);
 
     // set data for all triangles of this surfaces
     for (int k = 0; k < num_tris; k++) {
@@ -301,10 +344,8 @@ RayTracingInterface::get_normal(moab::EntityHandle surface,
     MB_CHK_SET_ERR_CONT(rval, "Failed to get parent volumes of the surface");
     assert(parent_vols.size() != 0);
 
-    moab::EntityHandle vol = parent_vols[0];
-
     // arbitrarily use one of the parent volumes for the lookup
-    const std::vector<DblTri>& buffer = buffer_storage.retrieve_buffer(vol);
+    moab::EntityHandle vol = parent_vols[0];
 
     moab::EntityHandle surf, closest_facet;
     double dist;
@@ -516,9 +557,9 @@ void RayTracingInterface::closest(moab::EntityHandle volume,
   // determine what scene
   RTCGeometry g = rtcGetGeometry(scene, point_query.geomID);
   // look up the triangle buffer array we stored on this geometry
-  void* tris_i = rtcGetGeometryUserData(g);
+  const UserData* user_data = (const UserData*) rtcGetGeometryUserData(g);
   // find the DblTri in the array using the primitive ID as an index
-  const DblTri* tris = (const DblTri*) tris_i;
+  const DblTri* tris = (const DblTri*) user_data->tri_ptr;
   const DblTri& this_tri = tris[point_query.primID];
 
   // set the outgoing surface and triangle data

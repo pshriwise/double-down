@@ -44,6 +44,7 @@ int main() {
   RTI->get_bbox(sphere_vol, llc, urc);
 
   double sphere_bound = 10.0;
+  sphere_bound -= 1e-04; // make allowance for faceting tolerance
   for (int i = 0; i < 3; i++) {
     if (llc[i] >= -sphere_bound) { return 1; }
     if (urc[i] <= sphere_bound) { return 1;}
