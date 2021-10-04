@@ -231,9 +231,7 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle volume)
   double dy = max[1] - min[1];
   double dz = max[2] - min[2];
 
-  double dmax = std::sqrt(3) * std::sqrt(dx*dx + dy*dy + dz*dz) * std::pow(10, -std::numeric_limits<float>::digits10);
-
-  std::cout << "Max distance: " << dmax << std::endl;
+  double dmax = 2 * std::sqrt(3) * std::sqrt(dx*dx + dy*dy + dz*dz) * std::pow(10, -std::numeric_limits<float>::digits10);
 
   // index to keep track of where we're adding triangles in the storage buffer
   int buffer_start = 0;
@@ -316,6 +314,7 @@ void RayTracingInterface::deleteBVH(moab::EntityHandle volume)
 
   // remove the scene from Embree
   rtcReleaseScene(scene_map[volume]);
+
   // remove the volume entry from the internal mapping structures
   buffer_storage.free_storage(volume);
   scene_map.erase(volume);
