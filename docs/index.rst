@@ -31,7 +31,7 @@ Table of Contents
     :maxdepth: 2
 
     self
-    usersbuide/index
+    usersguide/index
     methodology/index
     api/index
 
