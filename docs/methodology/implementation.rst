@@ -13,10 +13,18 @@ the bounding boxes for each primitive would be interpreted by Embree in single
 precision, the bounds are artificially extended enough to ensure that any
 ray-box intersection that would have occurred in double precision would also
 occur in single precision, but not enough to degrade performance of the BVH
-traversal due to large overlaps of sibling bounding boxes. An :math:`\epsilon`
-of 0.005 is sufficient to ensure robust ray intersections without significantly
-impacting performance for models typically analyzed in Monte Carlo radiation
-transport problems, the application for which this tool is designed.
+traversal due to large overlaps of sibling bounding boxes. A robust box
+exapansion value is calculated for each volume based on the extent of the
+vertices making up the triangles of the volume. The following formula is applied
+to determine the extension value (:math:`\epsilon`) of boxes for each volume:
+
+.. math::
+    :label: box-extension
+
+    \epsilon = \sqrt{3} d_{max} 10^{-FLT\_DIG}
+
+where :math:`d_{max}` is the maximum distance a ray can travel in the volume and
+:math:`FLT\_DIG` is the number of floating point digits supported on the machine.
 
 .. _ray_dual:
 

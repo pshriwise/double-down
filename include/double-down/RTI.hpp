@@ -328,6 +328,7 @@ class RayTracingInterface {
   std::shared_ptr<moab::GeomTopoTool> GTT; //!< MOAB GeomTopoTool instance.
   std::shared_ptr<MBDirectAccess> mdam; //!< MBDirectAccess instance.
   DblTriStorage buffer_storage; //!< Per-volume storage for DblTri instances
+  std::unordered_map<RTCGeometry, UserData> data_ptr_map; //!< mapping of geometry instance to user data
   std::unordered_map<moab::EntityHandle, RTCScene> scene_map; //!< Mapping from MOAB volume EntityHandle's to Embree Scenes.
   double numerical_precision {1E-3}; //!< Numerical precision for triangle intersections.
   double overlap_thickness {0.0}; //!< Allowed overlap thickness for self-intersecting volumes.
