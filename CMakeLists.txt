@@ -5,6 +5,11 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(CMAKE_CXX_STANDARD 14)
 set(FIND_LIBRARY_USE_LIB64_PATHS TRUE)
 
+set(DOUBLE_DOWN_VERSION_MAJOR 0)
+set(DOUBLE_DOWN_VERSION_MINOR 0)
+set(DOUBLE_DOWN_VERSION_RELEASE 1)
+set(DOUBLE_DOWN_VERSION ${DOUBLE_DOWN_VERSION_MAJOR}.${DOUBLE_DOWN_VERSION_MINOR}.${DOUBLE_DOWN_VERSION_RELEASE})
+
 # Default to a release build
 set(default_build_type "Release")
 
@@ -68,6 +73,7 @@ install( TARGETS dd
 install(EXPORT ddTargets DESTINATION "${DD_CMAKE_CONFIG_LOCATION}")
 export( TARGETS dd FILE "ddTargets.cmake" )
 
+
 # install headers
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/RTI.hpp" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/primitives.hpp" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
@@ -84,7 +90,10 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/Vec3.h" DESTINATI
 # Tests
 enable_testing()
 
+# Configure CMake and version files
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/ddConfig.cmake.in" "${DD_CMAKE_CONFIG_LOCATION}/ddConfig.cmake")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/ddConfigVersion.cmake.in" "${DD_CMAKE_CONFIG_LOCATION}/ddConfigVersion.cmake")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/version.h.in" "${DD_INCLUDE_INSTALL_LOCATION}/version.h")
 
 add_subdirectory(docs)
 add_subdirectory(tools)
