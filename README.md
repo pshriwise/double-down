@@ -32,7 +32,7 @@ Double-down's documentation can be found [here](https://double-down.readthedocs.
 
 ## Installation
 
-Please find installation instructions [here](https://double-down.readthedocs.io/en/latest/)
+Please find installation instructions [here](https://double-down.readthedocs.io/en/latest/).
 
 ## Other Notes
 
