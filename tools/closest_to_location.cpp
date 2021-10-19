@@ -25,6 +25,8 @@ int main(int argc, char** argv) {
   // create new ray tracing interface
   std::unique_ptr<RayTracingInterface> RTI{new RayTracingInterface()};
 
+  std::cout << "Double Down Git SHA: " << RTI->git_sha() << std::endl;
+
   moab::ErrorCode rval;
   rval = RTI->load_file(po.getReqArg<std::string>("filename").c_str());
   MB_CHK_SET_ERR(rval, "Failed to load test file");

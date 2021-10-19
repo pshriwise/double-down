@@ -62,7 +62,7 @@ std::string RayTracingInterface::git_sha() const {
 #ifdef GIT_SHA1
   return GIT_SHA1;
 #else
-  return "";
+  return "unavailable";
 #endif
 }
 
