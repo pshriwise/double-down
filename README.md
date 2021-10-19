@@ -5,11 +5,6 @@
 [![CI Badge](https://github.com/pshriwise/double-down/workflows/Double%20Down%20CI/badge.svg)](https://github.com/pshriwise/double-down/actions?query=workflow%3A%22Double+Down+CI%22)
 
 
-## Documentation
-
-Double-down's documentation can be found [here](https://double-down.readthedocs.io/en/latest/).
-
-
 ## Summary
 
 `double-down` is a double precision interface to Embree via the Mesh Oriented
@@ -25,24 +20,19 @@ Ray values come in and out of the interface in double precision, making them
 useful for scientific purposes while maintaining the performance provided by the
 dedicated Intel developer team behind Embree.
 
+## Documentation
+
+Double-down's documentation can be found [here](https://double-down.readthedocs.io/en/latest/).
+
+## Prerequisites
+
+  * [MOAB](https://sigma.mcs.anl.gov/moab-library/) (>= 5.2.1)
+  * [Embree](https://www.embree.org/) (>= 3.6.1)
+  * [CMake](https://cmake.org/) (>= 3.4)
+
 ## Installation
 
-Assuming you have [MOAB](https://bitbucket.org/fathomteam/moab.git) and
-[Embree](https://github.com/embree/embree) installed already then the
-installation for double-down would be:
-
-```
-git clone https://github.com/pshriwise/double-down.git
-cd double-down
-mkdir build
-cd build
-cmake .. -DMOAB_DIR=/MOAB \
-         -DCMAKE_INSTALL_PREFIX=.. \
-         -DEMBREE_DIR=/embree
-make
-make install
-
-```
+Please find installation instructions [here](https://double-down.readthedocs.io/en/latest/).
 
 ## Other Notes
 
