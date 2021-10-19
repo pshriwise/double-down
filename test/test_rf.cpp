@@ -21,6 +21,8 @@ int main() {
   rval = RTI->init();
   MB_CHK_SET_ERR(rval, "Failed to initialize the RTI.");
 
+  std::cout << "GIT SHA: " << RTI->git_sha() << std::endl;
+
   moab::Range vols;
   rval = RTI->get_vols(vols);
   MB_CHK_SET_ERR(rval, "Failed to get volumes from the RTI.");
