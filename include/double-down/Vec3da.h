@@ -17,6 +17,8 @@
 
 #include "constants.h"
 
+namespace double_down {
+
 struct Vec3da {
   typedef double Scalar;
   enum { n = 3 };
@@ -134,5 +136,7 @@ __forceinline Vec3da cross( const Vec3da& a, const Vec3da& b ) { return Vec3da( 
 __forceinline std::ostream& operator <<(std::ostream &os, Vec3da  const& v) {
   return os << '[' << v[0] << ' ' << v[1] << ' ' << v[2] << ' ' << v.a << ']';
 }
+
+} // end namespace double_down
 
 #endif

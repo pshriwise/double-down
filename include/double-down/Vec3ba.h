@@ -7,6 +7,8 @@
 #include "constants.h"
 #include "sys.h"
 
+namespace double_down {
+
 struct Vec3ba {
   enum { n = 3 };
   bool x,y,z;
@@ -28,38 +30,14 @@ struct Vec3ba {
 
   __forceinline const bool& operator[](const size_t index) const { assert(index < 3); return (&x)[index]; }
   __forceinline       bool& operator[](const size_t index)       { assert(index < 3); return (&x)[index]; }
-
-
 };
 
-
-
 __forceinline bool all(Vec3ba v) { return v[0] && (v[0] == v[1]) && (v[0] == v[2]); }
-
-/* __forceinline Vec3ba operator +( const Vec3ba& b, const Vec3ba& c ) { return Vec3ba(b.x+c.x, b.y+c.y, b.z+c.z, b.a+c.a); } */
-/* __forceinline Vec3ba operator -( const Vec3ba& b, const Vec3ba& c ) { return Vec3ba(b.x-c.x, b.y-c.y, b.z-c.z, b.a-c.a); } */
-/* __forceinline Vec3ba operator *( const Vec3ba& b, const Vec3ba& c ) { return Vec3ba(b.x*c.x, b.y*c.y, b.z*c.z, b.a*c.a); } */
-/* __forceinline Vec3ba operator *( const float& pa, const Vec3ba& c ) { return Vec3ba(pa) * c; } */
-/* __forceinline Vec3ba operator *( const Vec3ba& c, const float& pa ) { return Vec3ba(pa) * c; } */
-/* __forceinline Vec3ba operator /( const Vec3ba& b, const Vec3ba& c ) { return Vec3ba(b.x/c.x, b.y/c.y, b.z/c.z, b.a/c.a); } */
-/* __forceinline Vec3ba operator /( const float& pa, const Vec3ba& c ) { return Vec3ba(pa) / c; } */
-/* __forceinline Vec3ba operator /( const Vec3ba& c, const float& pa ) { return Vec3ba(pa) / c; } */
-
-/* __forceinline const Vec3ba min( const Vec3ba& b, const Vec3ba& c ) { return Vec3ba(std::min(b.x,c.x),std::min(b.y,c.y), */
-/* 									   std::min(b.z,c.z),std::min(b.a,c.a)); } */
-/* __forceinline const Vec3ba max( const Vec3ba& b, const Vec3ba& c ) { return Vec3ba(std::max(b.x,c.x),std::max(b.y,c.y), */
-/* 									   std::max(b.z,c.z),std::max(b.a,c.a)); } */
-
-/* __forceinline const Vec3ba ge_mask( const Vec3ba& b, const Vec3ba& c ) { return Vec3<bool>(b.x <= c.x,b.y <= c.y,b.z <= c.z,b.a <= c.a); } */
-
-
-
-
-
-
 
 __forceinline std::ostream& operator <<(std::ostream &os, Vec3ba  const& v) {
   return os << '[' << v[0] << ' ' << v[1] << ' ' << v[2] << ' ' << v.a << ']';
 }
+
+} // end namespace double_down
 
 #endif

@@ -9,6 +9,7 @@
 
 #include "Vec3fa.h"
 
+namespace double_down {
 template<typename T> struct Vec3 {
 
   T x,y,z;
@@ -145,6 +146,6 @@ __forceinline const Vec3<T> rcp(const Vec3<T>& v ) { return Vec3<T>(1.0f/v.x,
 template<typename T>
 __forceinline const Vec3<T> rcp_safe(const Vec3<T>& a) { return rcp(zero_fix(a)); }
 
-
+} // end namespace double_down
 
 #endif

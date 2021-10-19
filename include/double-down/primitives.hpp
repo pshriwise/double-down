@@ -13,6 +13,8 @@
 #include "ray.h"
 #include "MOABDirectAccess.h"
 
+namespace double_down {
+
 /*! Structure with triangle information used in Embree */
 struct DblTri {
   void* mdam;
@@ -64,5 +66,7 @@ bool DblTriPointQueryFunc(RTCPointQueryFunctionArguments* args);
 
 //! \brief Function returning the distance to the nearest point on a triangle from the provided location
 double DblTriClosestFunc(const DblTri& tri, const double loc[3]);
+
+} // end namespace double_down
 
 #endif

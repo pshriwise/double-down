@@ -1,3 +1,4 @@
+namespace double_down {
 
 // OpenMC major, minor, and release numbers
 constexpr int VERSION_MAJOR {@DOUBLE_DOWN_VERSION_MAJOR@};
@@ -5,3 +6,5 @@ constexpr int VERSION_MINOR {@DOUBLE_DOWN_VERSION_MINOR@};
 constexpr int VERSION_RELEASE {@DOUBLE_DOWN_VERSION_RELEASE@};
 constexpr bool VERSION_DEV {true};
 constexpr std::array<int, 3> VERSION {VERSION_MAJOR, VERSION_MINOR, VERSION_RELEASE};
+
+} // end namespace double_down

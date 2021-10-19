@@ -7,6 +7,8 @@
 // Local
 #include "double-down/primitives.hpp"
 
+namespace double_down {
+
 void intersectionFilter(void* ptr, RTCDRayHit &rayhit)
 {
   switch(rayhit.ray.rf_type)
@@ -171,3 +173,5 @@ double DblTriClosestFunc(const DblTri& tri, const double loc[3]) {
   // return the distance to the triangle location
   return (result - location).length();
 }
+
+} // end namespace double_down

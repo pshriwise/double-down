@@ -1,4 +1,3 @@
-
 #ifndef DD_RAY_FUNCS_H
 #define DD_RAY_FUNCS_H
 
@@ -10,6 +9,8 @@
 
 // Double-down
 #include "ray.h"
+
+using namespace double_down;
 
 /*! Extension of the single/double precision ray hit to include MOAB handles */
 struct MBHit : RTCDHit {

@@ -8,6 +8,7 @@
 // double-down
 #include "double-down/RTI.hpp"
 
+using namespace double_down;
 
 int main(int argc, char** argv) {
 
