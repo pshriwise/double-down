@@ -6,6 +6,8 @@
 #include "moab/ProgOptions.hpp"
 #include "double-down/RTI.hpp"
 
+using namespace double_down;
+
 static const double PI = acos(-1.0);
 static const double denom = 1.0 / ((double) RAND_MAX);
 static const double denomPI = PI * denom;

@@ -11,6 +11,8 @@
 #include "sys.h"
 #include <immintrin.h>
 
+namespace double_down {
+
 struct __aligned(16) Vec3fa {
   typedef float Scalar;
   enum { n = 3 };
@@ -114,5 +116,7 @@ __forceinline float dot( const Vec3fa& a, const Vec3fa& b ) { return reduce_add(
 __forceinline std::ostream& operator <<(std::ostream &os, Vec3fa  const& v) {
   return os << '[' << v[0] << ' ' << v[1] << ' ' << v[2] << ' ' << v.a << ']';
 }
+
+} // end namespace double_down
 
 #endif

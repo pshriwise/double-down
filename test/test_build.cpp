@@ -3,6 +3,8 @@
 #include "double-down/RTI.hpp"
 #include "test_utils.hpp"
 
+using namespace double_down;
+
 int main() {
   // create new MOAB instance
   moab::Interface* MBI = new moab::Core();

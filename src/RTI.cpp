@@ -10,6 +10,8 @@
 #include "double-down/constants.h"
 
 
+namespace double_down {
+
 void error(void* dum, RTCError code, const char* str) {
   if (code != RTC_ERROR_NONE) {
     std::cout << "Error occured" << std::endl;
@@ -994,3 +996,5 @@ bool
 RayTracingInterface::has_bvh() const {
   return scene_map.size() > 0;
 }
+
+} // end namespace double_down

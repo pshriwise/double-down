@@ -4,6 +4,7 @@
 
 #include <limits>
 
+namespace double_down {
 // for abs(x) >= min_rcp_input the newton raphson rcp calculation does not fail
 static const float min_rcp_input = std::numeric_limits<float>::min() /* FIX ME */ *1E5 /* SHOULDNT NEED TO MULTIPLY BY THIS VALUE */;
 static const int BVH_MAX_DEPTH = 64;
@@ -77,5 +78,7 @@ static struct TrueTy {
 static struct FalseTy {
   inline operator bool( ) const { return false; }
 } False;
+
+} // end namespace double_down
 
 #endif

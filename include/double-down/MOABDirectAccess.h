@@ -11,6 +11,7 @@
 #include "Vec3da.h"
 
 using namespace moab;
+using namespace double_down;
 
 /*! Class to manage direct access of triangle connectivity and coordinates */
 class MBDirectAccess {

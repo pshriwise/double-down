@@ -8,6 +8,8 @@
 // Double-down
 #include "Vec3da.h"
 
+namespace double_down {
+
 enum RayFireType { RF, PIV, ACCUM };
 
 // TO-DO: there should be a few more double elements here (barycentric coords)
@@ -102,5 +104,7 @@ struct RTCDPointQuery : RTCPointQuery {
   double dx, dy, dz; //<! Double precision version of the query location
   double dradius; //!< Double precision version of the query distance
 };
+
+} // end namespace double_down
 
 #endif

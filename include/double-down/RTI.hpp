@@ -15,6 +15,8 @@
 #include <unordered_map>
 #include <memory>
 
+namespace double_down {
+
 class Node;
 
 /*! Interface for constructing BVH's, firing rays, and performing point containment checks. */
@@ -338,4 +340,6 @@ class RayTracingInterface {
   RTCDevice g_device {nullptr}; //!< Embree device object.
 };
 
-#endif
+} // end namespace double_down
+
+#endif // include guard
