@@ -89,6 +89,9 @@ class RayTracingInterface {
   //! \param filename Path to the mesh file to load.
   moab::ErrorCode load_file(std::string filename);
 
+  //! \brief Returns the git sha used to compile the executable (if available).
+  std::string git_sha() const;
+
   //! \brief Initialize the RTI, building acceleration datastructures and internal storage.
   //! Assumes that the MOAB file is already open.
   moab::ErrorCode init();

@@ -73,6 +73,18 @@ install( TARGETS dd
 install(EXPORT ddTargets DESTINATION "${DD_CMAKE_CONFIG_LOCATION}")
 export( TARGETS dd FILE "ddTargets.cmake" )
 
+find_package(Git)
+# Set git SHA1 hash as a compile definition
+if(GIT_FOUND)
+  execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                  RESULT_VARIABLE GIT_SHA1_SUCCESS
+                  OUTPUT_VARIABLE GIT_SHA1
+                  ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(GIT_SHA1_SUCCESS EQUAL 0)
+    target_compile_definitions(dd PRIVATE -DGIT_SHA1="${GIT_SHA1}")
+  endif()
+endif()
 
 # install headers
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/RTI.hpp" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")

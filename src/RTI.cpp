@@ -58,6 +58,14 @@ moab::ErrorCode RayTracingInterface::load_file(std::string filename) {
   return rval;
 }
 
+std::string RayTracingInterface::git_sha() const {
+#ifdef GIT_SHA1
+  return GIT_SHA1;
+#else
+  return "unavailable";
+#endif
+}
+
 moab::ErrorCode
 RayTracingInterface::get_obb(moab::EntityHandle volume,
                              double center[3],
