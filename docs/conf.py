@@ -27,9 +27,9 @@ project = 'Double-Down'
 copyright = '2021, Patrick Shriwise'
 author = 'Patrick Shriwise'
 
-version = '0.0'
+version = '1.0'
 # The full version, including alpha/beta/rc tags
-release = '0.0.0'
+release = '1.0.0'
 
 
 # -- General configuration ---------------------------------------------------
