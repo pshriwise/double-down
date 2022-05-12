@@ -43,7 +43,7 @@ endif()
 set( DD_BINARY_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/tools" )
 set( DD_INCLUDE_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/include/double_down" )
 set( DD_LIBRARY_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/lib" )
-set( DD_CMAKE_CONFIG_LOCATION "${DD_LIBRARY_INSTALL_LOCATION}/cmake/dd")
+set( DD_CMAKE_CONFIG_LOCATION "${DD_LIBRARY_INSTALL_LOCATION}/cmake")
 
 MESSAGE ( STATUS "Found Embree " ${EMBREE_VERSION} " at " ${EMBREE_PATH} )
 MESSAGE ( STATUS "EMBREE_LIBRARY is " ${EMBREE_LIBRARY} )
@@ -103,9 +103,12 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/Vec3.h" DESTINATI
 enable_testing()
 
 # Configure CMake and version files
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/ddConfig.cmake.in" "${DD_CMAKE_CONFIG_LOCATION}/ddConfig.cmake")
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/ddConfigVersion.cmake.in" "${DD_CMAKE_CONFIG_LOCATION}/ddConfigVersion.cmake")
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/version.h.in" "${DD_INCLUDE_INSTALL_LOCATION}/version.h")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/ddConfig.cmake.in" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/ddConfig.cmake")
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/cmake/ddConfig.cmake" DESTINATION "${DD_CMAKE_CONFIG_LOCATION}")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/ddConfigVersion.cmake.in" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/ddConfigVersion.cmake")
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/cmake/ddConfigVersion.cmake" DESTINATION "${DD_CMAKE_CONFIG_LOCATION}")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/version.h.in" "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/version.h")
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/version.h" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
 
 add_subdirectory(docs)
 add_subdirectory(tools)
