@@ -2,6 +2,8 @@
 #ifndef DD_PRIMITIVES_H
 #define DD_PRIMITIVES_H
 
+#include <array>
+
 // Embree
 #include "embree3/rtcore.h"
 
