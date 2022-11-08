@@ -1,6 +1,7 @@
 #ifndef _MBDIRECTACCESS_
 #define _MBDIRECTACCESS_
 
+#include <array>
 #include <memory>
 
 // MOAB
