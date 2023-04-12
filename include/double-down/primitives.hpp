@@ -4,8 +4,6 @@
 
 #include <array>
 
-// Embree
-#include "embree3/rtcore.h"
 
 // MOAB
 #include "moab/Core.hpp"
@@ -15,6 +13,8 @@
 #include "ray.h"
 #include "MOABDirectAccess.h"
 
+// Embree
+#include "double-down/embree_interface.hpp"
 namespace double_down {
 
 /*! Structure with triangle information used in Embree */

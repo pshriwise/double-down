@@ -1,8 +1,8 @@
 #ifndef DD_RTI_H
 #define DD_RTI_H
 
-#include "embree3/rtcore.h"
-#include "embree3/rtcore_ray.h"
+#include <unordered_map>
+#include <memory>
 
 #include "moab/Core.hpp"
 #include "moab/GeomQueryTool.hpp"
@@ -12,8 +12,8 @@
 #include "MOABRay.h"
 #include "MOABDirectAccess.h"
 
-#include <unordered_map>
-#include <memory>
+#include "embree_interface.hpp"
+
 
 namespace double_down {
 

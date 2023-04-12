@@ -8,6 +8,7 @@
 // Double-down
 #include "double-down/RTI.hpp"
 #include "double-down/constants.h"
+#include "double-down/embree_wrapper.hpp"
 
 
 namespace double_down {
@@ -584,9 +585,7 @@ void RayTracingInterface::shutdown() {
 void RayTracingInterface::fire(moab::EntityHandle volume, RTCDRayHit &rayhit)
 {
   {
-    RTCIntersectContext context;
-    rtcInitIntersectContext(&context);
-    rtcIntersect1(scene_map[volume],&context,(RTCRayHit*)&rayhit);
+    rtcIntersect1(scene_map[volume], (RTCRayHit*)&rayhit);
     rayhit.hit.Ng_x = -rayhit.hit.Ng_x;
     rayhit.hit.Ng_y = -rayhit.hit.Ng_y;
     rayhit.hit.Ng_z = -rayhit.hit.Ng_z;
@@ -740,9 +739,7 @@ RayTracingInterface::point_in_volume(const moab::EntityHandle volume,
 
   // fire ray
   {
-   RTCIntersectContext context;
-    rtcInitIntersectContext(&context);
-    rtcIntersect1(scene,&context,(RTCRayHit*)&mbrayhit);
+    rtcIntersect1(scene,(RTCRayHit*)&mbrayhit);
     // triangle normal conventions are the flipped in Embree compared to MOAB
     // TODO: reverse the initial triangle normals so we don't have to do these ops here.
     mbhit.Ng_x = -mbhit.Ng_x;
@@ -890,9 +887,7 @@ RayTracingInterface::ray_fire(const moab::EntityHandle volume,
 
   // fire ray
   {
-    RTCIntersectContext context;
-    rtcInitIntersectContext(&context);
-    rtcIntersect1(scene,&context,(RTCRayHit*)&rayhit);
+    rtcIntersect1(scene, (RTCRayHit*)&rayhit);
     mbhit.Ng_x = -mbhit.Ng_x;
     mbhit.Ng_y = -mbhit.Ng_y;
     mbhit.Ng_z = -mbhit.Ng_z;
@@ -917,9 +912,7 @@ RayTracingInterface::ray_fire(const moab::EntityHandle volume,
 
   // fire ray in negative direction
   if (overlap_thickness > 0.0) {
-    RTCIntersectContext context;
-    rtcInitIntersectContext(&context);
-    rtcIntersect1(scene,&context,(RTCRayHit*)&neg_ray);
+    rtcIntersect1(scene,(RTCRayHit*)&neg_ray);
     neg_hit.Ng_x = -neg_hit.Ng_x;
     neg_hit.Ng_y = -neg_hit.Ng_y;
     neg_hit.Ng_z = -neg_hit.Ng_z;
