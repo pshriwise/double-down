@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        embree_version: ['3.6.1', '4.0.0']
+        embree_version: ['3.6.1', '4.0.1']
 
     steps:
     - uses: actions/checkout@v2
