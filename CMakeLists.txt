@@ -33,12 +33,12 @@ MESSAGE ( STATUS "MOAB_INCLUDE_DIRS is " ${MOAB_INCLUDE_DIRS} )
 INCLUDE_DIRECTORIES( ${MOAB_INCLUDE_DIRS} )
 
 # Embree
+# this series of calls is needed to support the way that Embree indicates
+# compatible versions in 3 and 4 (version 4 does it correctly, but 3 does not)
 FIND_PACKAGE(embree 3.6.1 HINTS ${EMBREE_DIR} QUIET)
-
 if (NOT ${embree_FOUND})
 FIND_PACKAGE (embree REQUIRED HINTS ${EMBREE_DIR})
 endif()
-
 
 if (NOT ${EMBREE_VERSION} VERSION_GREATER 3.6.0)
   message(FATAL_ERROR "Double-down requires Embree v3.6.1 or higher.")
