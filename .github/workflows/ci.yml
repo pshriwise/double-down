@@ -23,11 +23,11 @@ env:
   DISPLAY: 99.0
 
 jobs:
-  strategty:
-    matrix:
-      embree_version: ['3.6.1', '4.0.0']
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        embree_version: ['3.6.1', '4.0.0']
 
     steps:
     - uses: actions/checkout@v2
