@@ -23,6 +23,9 @@ env:
   DISPLAY: 99.0
 
 jobs:
+  strategty:
+    matrix:
+      embree_version: ['3.6.1', '4.0.0']
   build:
     runs-on: ubuntu-latest
 
@@ -46,7 +49,7 @@ jobs:
 
     - name: Embree Build
       shell: bash
-      run: $GITHUB_WORKSPACE/ci/embree-install.sh
+      run: $GITHUB_WORKSPACE/ci/embree-install.sh ${embree_version}
 
     - name: Configure CMake
       # Use a bash shell so we can use the same syntax for environment variable
