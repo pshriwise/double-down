@@ -8,8 +8,6 @@
 // Double-down
 #include "double-down/RTI.hpp"
 #include "double-down/constants.h"
-#include "double-down/embree_wrapper.hpp"
-
 
 namespace double_down {
 
