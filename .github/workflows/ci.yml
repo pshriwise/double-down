@@ -25,6 +25,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        embree_version: ['3.6.1', '4.0.1']
 
     steps:
     - uses: actions/checkout@v2
@@ -46,7 +49,7 @@ jobs:
 
     - name: Embree Build
       shell: bash
-      run: $GITHUB_WORKSPACE/ci/embree-install.sh
+      run: $GITHUB_WORKSPACE/ci/embree-install.sh ${{ matrix.embree_version }}
 
     - name: Configure CMake
       # Use a bash shell so we can use the same syntax for environment variable

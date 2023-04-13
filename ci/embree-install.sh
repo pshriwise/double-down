@@ -1,8 +1,8 @@
 #!/bin/bash
 set -ex
 
-# Embree Variables
-EMBREE_TAG='v3.6.1'
+# Embree Variables -- use first argument to script as version number
+EMBREE_TAG="v${1}"
 EMBREE_REPO='https://github.com/embree/embree'
 EMBREE_INSTALL_DIR=$HOME/EMBREE/
 

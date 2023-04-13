@@ -1,14 +1,13 @@
 #ifndef DD_RAY_FUNCS_H
 #define DD_RAY_FUNCS_H
 
-// Embree
-#include "embree3/rtcore.h"
-
 // MOAB
 #include "moab/GeomQueryTool.hpp"
 
 // Double-down
 #include "ray.h"
+
+#include "double-down/embree_interface.hpp"
 
 using namespace double_down;
 

@@ -2,11 +2,10 @@
 #ifndef DD_RAY_H
 #define DD_RAY_H
 
-// Embree
-#include "embree3/rtcore_ray.h"
-
 // Double-down
 #include "Vec3da.h"
+
+#include "double-down/embree_interface.hpp"
 
 namespace double_down {
 

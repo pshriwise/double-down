@@ -33,11 +33,18 @@ MESSAGE ( STATUS "MOAB_INCLUDE_DIRS is " ${MOAB_INCLUDE_DIRS} )
 INCLUDE_DIRECTORIES( ${MOAB_INCLUDE_DIRS} )
 
 # Embree
-FIND_PACKAGE (embree 3.6.1 REQUIRED HINTS ${EMBREE_DIR})
+# this series of calls is needed to support the way that Embree indicates
+# compatible versions in 3 and 4 (version 4 does it correctly, but 3 does not)
+FIND_PACKAGE(embree 3.6.1 HINTS ${EMBREE_DIR} QUIET)
+if (NOT ${embree_FOUND})
+FIND_PACKAGE (embree REQUIRED HINTS ${EMBREE_DIR})
+endif()
 
 if (NOT ${EMBREE_VERSION} VERSION_GREATER 3.6.0)
   message(FATAL_ERROR "Double-down requires Embree v3.6.1 or higher.")
 endif()
+
+# set embree version
 
 # Set install locations
 set( DD_BINARY_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/tools" )
@@ -57,10 +64,17 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # add library
-add_library( dd SHARED "src/RTI.cpp" "src/primitives.cpp" "src/MOABRay.cpp" "src/MOABDirectAccess.cpp")
+add_library(dd SHARED "src/RTI.cpp" "src/primitives.cpp" "src/MOABRay.cpp" "src/MOABDirectAccess.cpp")
 target_include_directories(dd PRIVATE ${CMAKE_SOURCE_DIR}/include)
 set_target_properties(dd PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 set_target_properties(dd PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib )
+
+# pass precompile definition depending on embree version
+if (${EMBREE_VERSION} VERSION_GREATER_EQUAL 4.0.0)
+  target_compile_definitions(dd PUBLIC EMBREE4)
+else()
+  target_compile_definitions(dd PUBLIC EMBREE3)
+endif()
 
 target_include_directories( dd INTERFACE "${CMAKE_INSTALL_PREFIX}/include" ${EMBREE_INCLUDE_DIRS})
 target_link_libraries( dd ${MOAB_LIBRARIES} ${EMBREE_LIBRARY} )
