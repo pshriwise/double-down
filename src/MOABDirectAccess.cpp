@@ -3,7 +3,7 @@
 // MOAB
 #include "moab/Range.hpp"
 
-#include "double-down/MOABDirectAccess.h"
+#include "double_down/MOABDirectAccess.h"
 
 MBDirectAccess::MBDirectAccess(Interface* mbi) : mbi(mbi) { setup(); }
 
