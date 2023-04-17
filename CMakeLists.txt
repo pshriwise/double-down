@@ -112,6 +112,9 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/sys.h" DESTINATIO
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/Vec3fa.h" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/Vec3ba.h" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/Vec3.h" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/embree3.hpp" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/embree4.hpp" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/embree_interface.hpp" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
 
 # Tests
 enable_testing()
