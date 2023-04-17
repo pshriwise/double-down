@@ -69,13 +69,6 @@ target_include_directories(dd PRIVATE ${CMAKE_SOURCE_DIR}/include)
 set_target_properties(dd PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 set_target_properties(dd PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib )
 
-# pass precompile definition depending on embree version
-if (${EMBREE_VERSION} VERSION_GREATER_EQUAL 4.0.0)
-  target_compile_definitions(dd PUBLIC EMBREE4)
-else()
-  target_compile_definitions(dd PUBLIC EMBREE3)
-endif()
-
 target_include_directories( dd INTERFACE "${CMAKE_INSTALL_PREFIX}/include" ${EMBREE_INCLUDE_DIRS})
 target_link_libraries( dd ${MOAB_LIBRARIES} ${EMBREE_LIBRARY} )
 set_target_properties(dd PROPERTIES INSTALL_RPATH "${MOAB_LIBRARY_DIRS};${EMBREE_LIBRARY_DIR}")
@@ -112,6 +105,17 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/sys.h" DESTINATIO
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/Vec3fa.h" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/Vec3ba.h" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/Vec3.h" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
+
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/embree_interface.hpp" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
+
+# pass precompile definition depending on embree version
+if (${EMBREE_VERSION} VERSION_GREATER_EQUAL 4.0.0)
+  target_compile_definitions(dd PUBLIC EMBREE4)
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/embree4.hpp" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
+else()
+  target_compile_definitions(dd PUBLIC EMBREE3)
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/double-down/embree3.hpp" DESTINATION "${DD_INCLUDE_INSTALL_LOCATION}")
+endif()
 
 # Tests
 enable_testing()
