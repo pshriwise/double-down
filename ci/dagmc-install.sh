@@ -3,7 +3,7 @@ set -ex
 
 # DAGMC Variables
 DAGMC_BRANCH='develop'
-DAGMC_REPO='https://github.com/pshriwise/dagmc/'
+DAGMC_REPO='https://github.com/svalinn/dagmc/'
 DAGMC_INSTALL_DIR=$HOME/DAGMC/
 
 CURRENT_DIR=$(pwd)
