@@ -1,8 +1,8 @@
 
 
-#include "double-down/ray.h"
-#include "double-down/primitives.hpp"
-#include "double-down/MOABRay.h"
+#include "double_down/ray.h"
+#include "double_down/primitives.hpp"
+#include "double_down/MOABRay.h"
 
 bool in_facets(MBRay ray, moab::EntityHandle tri) {
   if (ray.rh) {

@@ -1,11 +1,11 @@
 
 #ifdef EMBREE4
 
-#include "double-down/embree4.hpp"
+#include "double_down/embree4.hpp"
 
 #elif defined(EMBREE3)
 
-#include "double-down/embree3.hpp"
+#include "double_down/embree3.hpp"
 
 #else
 

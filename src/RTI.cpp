@@ -6,8 +6,8 @@
 #include "moab/GeomTopoTool.hpp"
 
 // Double-down
-#include "double-down/RTI.hpp"
-#include "double-down/constants.h"
+#include "double_down/RTI.hpp"
+#include "double_down/constants.h"
 
 namespace double_down {
 

@@ -5,8 +5,8 @@
 // MOAB
 #include "moab/ProgOptions.hpp"
 
-// double-down
-#include "double-down/RTI.hpp"
+// double_down
+#include "double_down/RTI.hpp"
 
 using namespace double_down;
 

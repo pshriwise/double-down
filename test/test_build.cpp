@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "double-down/RTI.hpp"
+#include "double_down/RTI.hpp"
 #include "test_utils.hpp"
 
 using namespace double_down;

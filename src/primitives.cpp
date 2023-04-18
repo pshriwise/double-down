@@ -5,7 +5,7 @@
 #include "moab/GeomUtil.hpp"
 
 // Local
-#include "double-down/primitives.hpp"
+#include "double_down/primitives.hpp"
 
 namespace double_down {
 

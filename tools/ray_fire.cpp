@@ -4,7 +4,7 @@
 #include <ctime>
 
 #include "moab/ProgOptions.hpp"
-#include "double-down/RTI.hpp"
+#include "double_down/RTI.hpp"
 
 using namespace double_down;
 

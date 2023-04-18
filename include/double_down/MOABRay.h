@@ -7,7 +7,7 @@
 // Double-down
 #include "ray.h"
 
-#include "double-down/embree_interface.hpp"
+#include "double_down/embree_interface.hpp"
 
 using namespace double_down;
 

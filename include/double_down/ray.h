@@ -5,7 +5,7 @@
 // Double-down
 #include "Vec3da.h"
 
-#include "double-down/embree_interface.hpp"
+#include "double_down/embree_interface.hpp"
 
 namespace double_down {
 
