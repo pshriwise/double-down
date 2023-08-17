@@ -101,6 +101,11 @@ class RayTracingInterface {
   //! \brief Release all Embree scenes and device.
   void shutdown();
 
+  moab::ErrorCode
+  find_volume(const double xyz[3],
+              moab::EntityHandle& volume,
+              const double* uvw=nullptr);
+
   //! \brief Check location \p xyz for containment in the specified \p volume.
   //! Performs a point containment query by firing a single ray and checking the dot product
   //! of the ray direction and the sense-adjusted normal of the triangle hit. Falls back onto
@@ -115,7 +120,7 @@ class RayTracingInterface {
                                   const double xyz[3],
                                   int& result,
                                   const double *uvw,
-                                  const moab::GeomQueryTool::RayHistory *history,
+                                  const moab::GeomQueryTool::RayHistory *history=nullptr,
                                   double overlap_tol = 0.0);
 
 

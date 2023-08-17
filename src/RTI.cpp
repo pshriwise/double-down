@@ -697,6 +697,25 @@ RayTracingInterface::point_in_volume_slow(moab::EntityHandle volume,
 }
 
 moab::ErrorCode
+RayTracingInterface::find_volume(const double xyz[3],
+                                 moab::EntityHandle& volume,
+                                 const double* uvw) {
+  int result = 0;
+  moab::Range vols;
+  moab::ErrorCode rval = GTT->get_gsets_by_dimension(3, vols);
+  if (rval != moab::MB_SUCCESS) return rval;
+  for (moab::EntityHandle vol : vols) {
+    rval = point_in_volume(vol, xyz, result, uvw);
+    if (rval != moab::MB_SUCCESS) return rval;
+    if (result == 1) {
+      volume = vol;
+      break;
+    }
+  }
+  return moab::MB_SUCCESS;
+}
+
+moab::ErrorCode
 RayTracingInterface::point_in_volume(const moab::EntityHandle volume,
                                      const double xyz[3],
                                      int& result,
