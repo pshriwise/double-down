@@ -699,7 +699,7 @@ RayTracingInterface::point_in_volume_slow(moab::EntityHandle volume,
 moab::ErrorCode
 RayTracingInterface::find_volume(const double xyz[3],
                                  moab::EntityHandle& volume,
-                                 double* uvw) {
+                                 const double* uvw) {
   int result = 0;
   moab::Range vols;
   moab::ErrorCode rval = GTT->get_gsets_by_dimension(3, vols);

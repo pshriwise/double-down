@@ -104,7 +104,7 @@ class RayTracingInterface {
   moab::ErrorCode
   find_volume(const double xyz[3],
               moab::EntityHandle& volume,
-              double* uvw=nullptr);
+              const double* uvw=nullptr);
 
   //! \brief Check location \p xyz for containment in the specified \p volume.
   //! Performs a point containment query by firing a single ray and checking the dot product
