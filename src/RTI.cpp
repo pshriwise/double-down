@@ -704,7 +704,7 @@ RayTracingInterface::find_volume(const double xyz[3],
   moab::Range vols;
   moab::ErrorCode rval = GTT->get_gsets_by_dimension(3, vols);
   if (rval != moab::MB_SUCCESS) return rval;
-  for (auto vol : vols) {
+  for (moab::EntityHandle vol : vols) {
     rval = point_in_volume(vol, xyz, result, uvw);
     if (rval != moab::MB_SUCCESS) return rval;
     if (result == 1) {

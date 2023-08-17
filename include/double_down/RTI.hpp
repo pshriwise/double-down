@@ -120,7 +120,7 @@ class RayTracingInterface {
                                   const double xyz[3],
                                   int& result,
                                   const double *uvw,
-                                  const moab::GeomQueryTool::RayHistory *history,
+                                  const moab::GeomQueryTool::RayHistory *history=nullptr,
                                   double overlap_tol = 0.0);
 
 
