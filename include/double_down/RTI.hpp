@@ -130,6 +130,16 @@ class RayTracingInterface {
                                        const double xyz[3],
                                        int& result);
 
+
+  //! \brief Point containment query for the specified point \p xyz and using acceleration features
+  //! of MOAB.
+  //! \param xyz The point to check.
+  //! \param volume MOAB entity to check against.
+  //! \param uwv optional direction vector to be consistent across calls.
+  moab::ErrorCode find_volume(const double xyz[3],
+                                       moab::EntityHandle &volume,
+                                       const double &uwv = NULL);
+
   //! \brief Calculates the solid angle of a polygon, \p face, with respect to \p point.
   //! This method is adapted from "Point in Polyhedron Testing Using Spherical Polygons", Paulo Cezar
   //! Pinto Carvalho and Paulo Roma Cavalcanti, _Graphics Gems V_, pg. 42.  Original algorithm
