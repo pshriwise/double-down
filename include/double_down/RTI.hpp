@@ -138,7 +138,7 @@ class RayTracingInterface {
   //! \param uwv optional direction vector to be consistent across calls.
   moab::ErrorCode find_volume(const double xyz[3],
                                        moab::EntityHandle &volume,
-                                       const double &uwv = NULL);
+                                       const double *uwv = NULL);
 
   //! \brief Calculates the solid angle of a polygon, \p face, with respect to \p point.
   //! This method is adapted from "Point in Polyhedron Testing Using Spherical Polygons", Paulo Cezar
