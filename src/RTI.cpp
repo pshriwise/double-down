@@ -4,6 +4,7 @@
 // MOAB
 #include "MBTagConventions.hpp"
 #include "moab/GeomTopoTool.hpp"
+#include "moab/GeomQueryTool.hpp"
 
 // Double-down
 #include "double_down/RTI.hpp"
@@ -766,7 +767,8 @@ RayTracingInterface::find_volume(const double xyz[3],
                                    const double *uvw)
 {
   moab::ErrorCode rval;
-  rval = moab::find_volume(xyz,volume,uvw);
+  auto gqt = std::shared_ptr<moab::GeomQueryTool> ( new moab::GeomQueryTool(this->gttool()) );
+  rval = gqt->find_volume(xyz,volume,uvw);
   return rval;
 }
 
