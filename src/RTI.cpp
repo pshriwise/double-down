@@ -763,7 +763,7 @@ RayTracingInterface::point_in_volume(const moab::EntityHandle volume,
 moab::ErrorCode
 RayTracingInterface::find_volume(const double xyz[3],
                                    moab::EntityHandle &volume,
-                                   const double *uvw = NULL)
+                                   const double *uvw)
 {
   moab::ErrorCode rval;
   rval = moab::find_volume(xyz,volume,uvw);
