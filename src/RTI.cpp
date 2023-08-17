@@ -701,9 +701,12 @@ RayTracingInterface::find_volume(const double xyz[3],
                                  moab::EntityHandle& volume,
                                  double* uvw) {
   int result = 0;
-  for (int i = 0; i < GTT->num_entities(3); i++) {
-    moab::EntityHandle vol = GTT->entity_by_index(3, i);
-    point_in_volume(vol, xyz, result, uvw);
+  moab::Range vols;
+  moab::ErrorCode rval = GTT->get_gsets_by_dimension(3, vols);
+  if (rval != moab::MB_SUCCESS) return rval;
+  for (auto vol : vols) {
+    rval = point_in_volume(vol, xyz, result, uvw);
+    if (rval != moab::MB_SUCCESS) return rval;
     if (result == 1) {
       volume = vol;
       break;
