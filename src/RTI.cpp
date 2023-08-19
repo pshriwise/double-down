@@ -8,7 +8,6 @@
 // Double-down
 #include "double_down/RTI.hpp"
 #include "double_down/constants.h"
-#include "double_down/util.h"
 
 namespace double_down {
 
