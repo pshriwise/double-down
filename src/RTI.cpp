@@ -8,6 +8,7 @@
 // Double-down
 #include "double_down/RTI.hpp"
 #include "double_down/constants.h"
+#include "double_down/util.h"
 
 namespace double_down {
 
@@ -33,6 +34,8 @@ moab::ErrorCode RayTracingInterface::init()
   rtcSetDeviceErrorFunction(g_device, (RTCErrorFunction)error, NULL);
 
   mdam = std::shared_ptr<MBDirectAccess>(new MBDirectAccess(MBI));
+
+  GTT->setup_implicit_complement();
 
   // detemine how many volumes are in the MOAB file
   moab::Range vols;
@@ -151,8 +154,6 @@ RayTracingInterface::get_bbox(moab::EntityHandle volume,
 
   return rval;
 }
-
-
 
 moab::ErrorCode
 RayTracingInterface::allocateTriangleBuffer(moab::EntityHandle volume)
@@ -722,8 +723,8 @@ moab::ErrorCode
 RayTracingInterface::find_volume(const double xyz[3],
                                  moab::EntityHandle& volume,
                                  const double* uvw) {
-
   moab::ErrorCode rval;
+
   const double huge_val = std::numeric_limits<double>::max();
   double dist_limit = huge_val;
 
@@ -738,8 +739,8 @@ RayTracingInterface::find_volume(const double xyz[3],
   mbray.tnear = 0.0;
   mbray.set_len(dist_limit);
   // use normal ray fire for exiting intersection
-  mbray.rf_type = RayFireType::PIV;
-  mbray.orientation = 1;
+  mbray.rf_type = RayFireType::FV;
+  mbray.orientation = 0;
   mbray.mask = -1;
 
   // initial hit information
@@ -770,7 +771,6 @@ RayTracingInterface::find_volume(const double xyz[3],
     }
     return MB_SUCCESS;
   }
-
 
   // if the ray misses for some reason, fall back on the linear search method
   int result = 0;

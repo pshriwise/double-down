@@ -9,7 +9,7 @@
 
 namespace double_down {
 
-enum RayFireType { RF, PIV, ACCUM };
+enum RayFireType { RF, PIV, ACCUM, FV };
 
 // TO-DO: there should be a few more double elements here (barycentric coords)
 
