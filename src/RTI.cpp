@@ -50,6 +50,8 @@ moab::ErrorCode RayTracingInterface::init()
     createBVH(vol);
   } // end volume loop
 
+  create_global_scene();
+
   return moab::MB_SUCCESS;
 }
 
@@ -193,7 +195,7 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle volume)
   // add new scene to our vector
   RTCScene scene = rtcNewScene(g_device);
   rtcSetSceneFlags(scene, RTC_SCENE_FLAG_ROBUST);
-  rtcSetSceneBuildQuality(scene,RTC_BUILD_QUALITY_HIGH);
+  rtcSetSceneBuildQuality(scene, RTC_BUILD_QUALITY_HIGH);
 
   // add this scene to the map from MOAB volumes to Embree scenes
   scene_map[volume] = scene;
@@ -307,6 +309,26 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle volume)
     rtcCommitScene(scene);
 
     return moab::MB_SUCCESS;
+}
+
+void RayTracingInterface::create_global_scene() {
+
+  // re-create the scene if one is already present
+  if (global_scene) {
+    rtcReleaseScene(global_scene);
+  }
+
+  global_scene = rtcNewScene(g_device);
+  rtcSetSceneFlags(global_scene, RTC_SCENE_FLAG_ROBUST);
+  rtcSetSceneBuildQuality(global_scene, RTC_BUILD_QUALITY_HIGH);
+
+  // loop over all geometries
+  for (auto entry : data_ptr_map) {
+    auto geom = entry.first;
+    rtcAttachGeometry(global_scene, geom);
+  }
+
+  rtcCommitScene(global_scene);
 }
 
 void RayTracingInterface::deleteBVH(moab::EntityHandle volume)

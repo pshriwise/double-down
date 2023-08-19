@@ -248,6 +248,10 @@ class RayTracingInterface {
   moab::ErrorCode
   createBVH(moab::EntityHandle volume);
 
+  //! \brief Create a global scene containing all geometries (surfaces) in the
+  //! model
+  void create_global_scene();
+
   //! \brief Deletes the BVH for the volume if present.
   //! \param volume MOAB EntityHandle of the volume.
   void
@@ -342,6 +346,7 @@ class RayTracingInterface {
   std::unordered_map<moab::EntityHandle, RTCScene> scene_map; //!< Mapping from MOAB volume EntityHandle's to Embree Scenes.
   double numerical_precision {1E-3}; //!< Numerical precision for triangle intersections.
   double overlap_thickness {0.0}; //!< Allowed overlap thickness for self-intersecting volumes.
+  RTCScene global_scene {nullptr};
   RTCDevice g_device {nullptr}; //!< Embree device object.
 };
 
