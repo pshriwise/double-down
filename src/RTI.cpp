@@ -35,8 +35,6 @@ moab::ErrorCode RayTracingInterface::init()
 
   mdam = std::shared_ptr<MBDirectAccess>(new MBDirectAccess(MBI));
 
-  GTT->setup_implicit_complement();
-
   // detemine how many volumes are in the MOAB file
   moab::Range vols;
   rval = get_vols(vols);
