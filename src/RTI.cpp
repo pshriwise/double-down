@@ -738,7 +738,7 @@ RayTracingInterface::find_volume(const double xyz[3],
   mbray.tnear = 0.0;
   mbray.set_len(dist_limit);
   // use normal ray fire for exiting intersection
-  mbray.rf_type = RayFireType::RF;
+  mbray.rf_type = RayFireType::PIV;
   mbray.orientation = 1;
   mbray.mask = -1;
 
@@ -750,17 +750,24 @@ RayTracingInterface::find_volume(const double xyz[3],
   // fire ray
   {
     rtcIntersect1(global_scene, (RTCRayHit*)&rayhit);
+    mbhit.Ng_x = -mbhit.Ng_x;
+    mbhit.Ng_y = -mbhit.Ng_y;
+    mbhit.Ng_z = -mbhit.Ng_z;
   }
+
+  Vec3da ray_dir(mbray.ddir);
+  Vec3da tri_norm(rayhit.hit.dNg[0], rayhit.hit.dNg[1], rayhit.hit.dNg[2]);
 
   if (mbhit.geomID != RTC_INVALID_GEOMETRY_ID) {
     // get the volumes on either side of this geometry
-    std::vector<moab::EntityHandle> vols;
-    rval = MBI->get_parent_meshsets(mbhit.surf_handle, vols);
-    MB_CHK_SET_ERR_CONT(moab::MB_FAILURE, "Failed to get parent meshsets");
-    if (2 != vols.size()) {
-      MB_CHK_SET_ERR_CONT(moab::MB_FAILURE, "Invalid number of parent volumes found");
+    moab::EntityHandle fwd, bwd;
+    rval = GTT->get_surface_senses(mbhit.surf_handle, fwd, bwd);
+    MB_CHK_SET_ERR_CONT(rval, "Failed to get parent meshsets");
+    if (dot(ray_dir, tri_norm) > 0.0) {
+      volume = fwd;
+    } else {
+      volume = bwd;
     }
-    volume = vols.front();
     return MB_SUCCESS;
   }
 
