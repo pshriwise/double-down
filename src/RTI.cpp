@@ -722,9 +722,53 @@ moab::ErrorCode
 RayTracingInterface::find_volume(const double xyz[3],
                                  moab::EntityHandle& volume,
                                  const double* uvw) {
+
+  moab::ErrorCode rval;
+  const double huge_val = std::numeric_limits<double>::max();
+  double dist_limit = huge_val;
+
+  MBRayHit rayhit;
+
+  MBRay& mbray = rayhit.ray;
+  mbray.set_org(xyz);
+  if (uvw) mbray.set_dir(uvw);
+  else mbray.set_dir({0.7071, 0.7071, 0.0});
+
+  // initial ray information
+  mbray.tnear = 0.0;
+  mbray.set_len(dist_limit);
+  // use normal ray fire for exiting intersection
+  mbray.rf_type = RayFireType::RF;
+  mbray.orientation = 1;
+  mbray.mask = -1;
+
+  // initial hit information
+  MBHit& mbhit = rayhit.hit;
+  mbhit.geomID = RTC_INVALID_GEOMETRY_ID;
+  mbhit.primID = RTC_INVALID_GEOMETRY_ID;
+
+  // fire ray
+  {
+    rtcIntersect1(global_scene, (RTCRayHit*)&rayhit);
+  }
+
+  if (mbhit.geomID != RTC_INVALID_GEOMETRY_ID) {
+    // get the volumes on either side of this geometry
+    std::vector<moab::EntityHandle> vols;
+    rval = MBI->get_parent_meshsets(mbhit.surf_handle, vols);
+    MB_CHK_SET_ERR_CONT(moab::MB_FAILURE, "Failed to get parent meshsets");
+    if (2 != vols.size()) {
+      MB_CHK_SET_ERR_CONT(moab::MB_FAILURE, "Invalid number of parent volumes found");
+    }
+    volume = vols.front();
+    return MB_SUCCESS;
+  }
+
+
+  // if the ray misses for some reason, fall back on the linear search method
   int result = 0;
   moab::Range vols;
-  moab::ErrorCode rval = GTT->get_gsets_by_dimension(3, vols);
+  rval = GTT->get_gsets_by_dimension(3, vols);
   if (rval != moab::MB_SUCCESS) return rval;
   for (moab::EntityHandle vol : vols) {
     rval = point_in_volume(vol, xyz, result, uvw);
