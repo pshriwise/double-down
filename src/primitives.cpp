@@ -88,7 +88,7 @@ void DblTriIntersectFunc(RTCIntersectFunctionNArguments* args) {
     normal.normalize();
 
     // flip the triangle normal if the sense is reversed
-    if( -1 == this_tri.sense ) normal *= -1;
+    if (-1 == this_tri.sense && ray.rf_type != RayFireType::FV) normal *= -1;
 
     // set the double precision normal of the hit
     hit.dNg[0] = normal[0];

@@ -50,6 +50,8 @@ moab::ErrorCode RayTracingInterface::init()
     createBVH(vol);
   } // end volume loop
 
+  create_global_scene();
+
   return moab::MB_SUCCESS;
 }
 
@@ -150,8 +152,6 @@ RayTracingInterface::get_bbox(moab::EntityHandle volume,
   return rval;
 }
 
-
-
 moab::ErrorCode
 RayTracingInterface::allocateTriangleBuffer(moab::EntityHandle volume)
 {
@@ -193,7 +193,7 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle volume)
   // add new scene to our vector
   RTCScene scene = rtcNewScene(g_device);
   rtcSetSceneFlags(scene, RTC_SCENE_FLAG_ROBUST);
-  rtcSetSceneBuildQuality(scene,RTC_BUILD_QUALITY_HIGH);
+  rtcSetSceneBuildQuality(scene, RTC_BUILD_QUALITY_HIGH);
 
   // add this scene to the map from MOAB volumes to Embree scenes
   scene_map[volume] = scene;
@@ -307,6 +307,26 @@ moab::ErrorCode RayTracingInterface::createBVH(moab::EntityHandle volume)
     rtcCommitScene(scene);
 
     return moab::MB_SUCCESS;
+}
+
+void RayTracingInterface::create_global_scene() {
+
+  // re-create the scene if one is already present
+  if (global_scene) {
+    rtcReleaseScene(global_scene);
+  }
+
+  global_scene = rtcNewScene(g_device);
+  rtcSetSceneFlags(global_scene, RTC_SCENE_FLAG_ROBUST);
+  rtcSetSceneBuildQuality(global_scene, RTC_BUILD_QUALITY_HIGH);
+
+  // loop over all geometries
+  for (auto entry : data_ptr_map) {
+    auto geom = entry.first;
+    rtcAttachGeometry(global_scene, geom);
+  }
+
+  rtcCommitScene(global_scene);
 }
 
 void RayTracingInterface::deleteBVH(moab::EntityHandle volume)
@@ -700,9 +720,59 @@ moab::ErrorCode
 RayTracingInterface::find_volume(const double xyz[3],
                                  moab::EntityHandle& volume,
                                  const double* uvw) {
+  moab::ErrorCode rval;
+
+  const double huge_val = std::numeric_limits<double>::max();
+  double dist_limit = huge_val;
+
+  MBRayHit rayhit;
+
+  MBRay& mbray = rayhit.ray;
+  mbray.set_org(xyz);
+  if (uvw) mbray.set_dir(uvw);
+  else mbray.set_dir({0.7071, 0.7071, 0.0});
+
+  // initial ray information
+  mbray.tnear = 0.0;
+  mbray.set_len(dist_limit);
+  // use normal ray fire for exiting intersection
+  mbray.rf_type = RayFireType::FV;
+  mbray.orientation = 0;
+  mbray.mask = -1;
+
+  // initial hit information
+  MBHit& mbhit = rayhit.hit;
+  mbhit.geomID = RTC_INVALID_GEOMETRY_ID;
+  mbhit.primID = RTC_INVALID_GEOMETRY_ID;
+
+  // fire ray
+  {
+    rtcIntersect1(global_scene, (RTCRayHit*)&rayhit);
+    mbhit.Ng_x = -mbhit.Ng_x;
+    mbhit.Ng_y = -mbhit.Ng_y;
+    mbhit.Ng_z = -mbhit.Ng_z;
+  }
+
+  Vec3da ray_dir(mbray.ddir);
+  Vec3da tri_norm(rayhit.hit.dNg[0], rayhit.hit.dNg[1], rayhit.hit.dNg[2]);
+
+  if (mbhit.geomID != RTC_INVALID_GEOMETRY_ID) {
+    // get the volumes on either side of this geometry
+    moab::EntityHandle fwd, bwd;
+    rval = GTT->get_surface_senses(mbhit.surf_handle, fwd, bwd);
+    MB_CHK_SET_ERR_CONT(rval, "Failed to get parent meshsets");
+    if (dot(ray_dir, tri_norm) > 0.0) {
+      volume = fwd;
+    } else {
+      volume = bwd;
+    }
+    return MB_SUCCESS;
+  }
+
+  // if the ray misses for some reason, fall back on the linear search method
   int result = 0;
   moab::Range vols;
-  moab::ErrorCode rval = GTT->get_gsets_by_dimension(3, vols);
+  rval = GTT->get_gsets_by_dimension(3, vols);
   if (rval != moab::MB_SUCCESS) return rval;
   for (moab::EntityHandle vol : vols) {
     rval = point_in_volume(vol, xyz, result, uvw);
