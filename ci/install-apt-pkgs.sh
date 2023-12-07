@@ -1,5 +1,5 @@
 set -ex
-
+apt update
 apt install -y \
     mpich \
     libmpich-dev \
