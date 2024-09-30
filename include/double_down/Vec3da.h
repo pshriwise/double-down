@@ -5,8 +5,10 @@
 #include <assert.h>
 #include <iostream>
 #include <math.h>
-#include <immintrin.h>
-#include <xmmintrin.h>
+#if defined(__x86_64__)
+  #include <immintrin.h>
+  #include <xmmintrin.h>
+#endif 
 #include <limits>
 
 #ifndef NDEBUG
