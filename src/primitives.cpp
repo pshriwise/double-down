@@ -17,6 +17,8 @@ void intersectionFilter(void* ptr, RTCDRayHit &rayhit)
       if (0 > rayhit.dot_prod()) { rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID; }
       break;
     case RayFireType::PIV: //if this is a point_in_vol fire, accept all hits
+    case RayFireType::ACCUM: //if this is an accumulation fire, accept all hits
+    case RayFireType::FV: //if this is a fire for finding a volume, accept all hits
       break;
     }
 }
@@ -111,7 +113,7 @@ void DblTriOccludedFunc(RTCOccludedFunctionNArguments* args) {
   // get the double precision ray from the args
   RTCDRay* ray = (RTCDRay*)&(args->ray);
 
-  MBDirectAccess* mdam = (MBDirectAccess*) mdam;
+  MBDirectAccess* mdam = (MBDirectAccess*) this_tri.mdam;
 
   std::array<moab::CartVect, 3> coords = mdam->get_mb_coords(this_tri.handle);
 

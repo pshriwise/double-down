@@ -30,8 +30,6 @@ int main(int argc, char** argv) {
 
   po.parseCommandLine(argc, argv);
 
-
-
   std::shared_ptr<RayTracingInterface> RTI{new RayTracingInterface()};
 
   std::cout << "Double Down Git SHA: " << RTI->git_sha() << std::endl;
@@ -39,7 +37,6 @@ int main(int argc, char** argv) {
 #ifdef __AVX2__
   std::cout << "AVX2 Enabled" << std::endl;
 #endif
-
 
   moab::ErrorCode rval;
   rval = RTI->load_file(filename);
@@ -83,7 +80,7 @@ int main(int argc, char** argv) {
     total += std::clock() - mark;
 
    // make sure we hit something
-    if (rayhit.hit.geomID == -1) {
+    if (rayhit.hit.geomID < 0) {
       std::cout << "Miss!" << std::endl;
       exit(1);
     }

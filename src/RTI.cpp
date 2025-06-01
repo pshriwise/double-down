@@ -19,7 +19,7 @@ void error(void* dum, RTCError code, const char* str) {
   }
 }
 
-RayTracingInterface::RayTracingInterface(moab::Interface *mbi) : GTT(std::make_shared<moab::GeomTopoTool>(mbi)), MBI(mbi) {}
+RayTracingInterface::RayTracingInterface(moab::Interface *mbi) :MBI(mbi), GTT(std::make_shared<moab::GeomTopoTool>(mbi)) {}
 
 RayTracingInterface::RayTracingInterface(std::shared_ptr<moab::GeomTopoTool> gtt) : MBI(gtt->get_moab_instance()), GTT(gtt) {}
 
@@ -337,10 +337,6 @@ void RayTracingInterface::deleteBVH(moab::EntityHandle volume)
     "BVHs can only be created and deleted by volume in double-down.");
     return;
   }
-
-  int ent_dim = GTT->dimension(volume);
-  moab::Range surfs;
-
   // remove the scene from Embree
   rtcReleaseScene(scene_map[volume]);
 
@@ -551,9 +547,6 @@ void RayTracingInterface::closest(moab::EntityHandle volume,
                                   moab::EntityHandle* surface,
                                   moab::EntityHandle* facet)
 {
-
-  const std::vector<DblTri>& buffer = buffer_storage.retrieve_buffer(volume);
-
   // create point query object, a dual representation of the single and double precision query,
   // sets parameters of the closest to location query
   RTCDPointQuery point_query;
@@ -586,8 +579,8 @@ void RayTracingInterface::closest(moab::EntityHandle volume,
   RTCGeometry g = rtcGetGeometry(scene, point_query.geomID);
   // look up the triangle buffer array we stored on this geometry
   const UserData* user_data = (const UserData*) rtcGetGeometryUserData(g);
-  // find the DblTri in the array using the primitive ID as an index
   const DblTri* tris = (const DblTri*) user_data->tri_ptr;
+  // find the DblTri in the array using the primitive ID as an index
   const DblTri& this_tri = tris[point_query.primID];
 
   // set the outgoing surface and triangle data
@@ -912,8 +905,6 @@ RayTracingInterface::test_volume_boundary(const moab::EntityHandle volume,
                                           int& result,
                                           const moab::GeomQueryTool::RayHistory* history)
 {
-  moab::ErrorCode rval;
-
   int dir;
   moab::EntityHandle last_facet_hit = 0;
   if (history) { history->get_last_intersection(last_facet_hit); }
