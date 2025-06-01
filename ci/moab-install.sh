@@ -2,7 +2,7 @@
 set -ex
 
 # MOAB Variables
-MOAB_BRANCH='master'
+MOAB_BRANCH='5.4.1'
 MOAB_REPO='https://bitbucket.org/fathomteam/moab/'
 MOAB_INSTALL_DIR=$HOME/MOAB/
 
