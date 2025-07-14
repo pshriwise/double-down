@@ -31,8 +31,6 @@ int main() {
 
   // fire a test ray
   double org[3] = {0.0, 0.0, 0.0};
-  double dir[3] = {1.0, 0.0, 0.0};
-
   double dist = 0.0;
 
   std::cout << "Running closest test" << std::endl;

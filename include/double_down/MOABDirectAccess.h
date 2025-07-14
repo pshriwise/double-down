@@ -33,7 +33,7 @@ public:
   //! \brief Check that a triangle is part of the managed coordinates here
   inline bool accessible(EntityHandle tri) {
     // determine the correct index to use
-    int idx = 0;
+    size_t idx = 0;
     auto fe = first_elements_[idx];
     while(true) {
       if (tri - fe.first < fe.second) { break; }

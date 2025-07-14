@@ -84,8 +84,16 @@ jobs:
       shell: bash
       run: ls $HOME/dd
 
+
+
     # This test is here to check compatibility with DAGMC's develop branch
     # An error here shouldn't cause the build to fail
     - name: DAGMC Build and Test
       shell: bash
       run: $GITHUB_WORKSPACE/ci/dagmc-install.sh
+
+    - name: Debug with tmate if failure
+      if: failure()
+      uses: mxschmitt/action-tmate@v3
+      with:
+        limit-access-to-actor: true
