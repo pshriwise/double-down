@@ -21,7 +21,7 @@
 
 namespace double_down {
 
-struct Vec3da {
+struct alignas(32) Vec3da {
   typedef double Scalar;
   enum { n = 3 };
   union{
