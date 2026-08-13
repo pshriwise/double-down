@@ -56,6 +56,7 @@ MBDirectAccess::setup() {
     tx_.push_back(&(*xtmp));
     ty_.push_back(&(*ytmp));
     tz_.push_back(&(*ztmp));
+    first_vertices_.push_back({*verts_it, n_vertices});
 
     // move iterator forward by the number of vertices in this contiguous memory block
     verts_it += n_vertices;
@@ -70,6 +71,7 @@ MBDirectAccess::clear()
   element_stride_ = -1;
 
   first_elements_.clear();
+  first_vertices_.clear();
   vconn_.clear();
   tx_.clear();
   ty_.clear();
