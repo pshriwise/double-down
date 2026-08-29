@@ -44,6 +44,19 @@ public:
     return true;
   }
 
+  //! \brief Map a vertex handle to (sequence index, local offset) in the coordinate arrays
+  inline std::pair<size_t, size_t> vertex_index(EntityHandle vert) const {
+    size_t idx = 0;
+    auto fv = first_vertices_[idx];
+    while (vert - fv.first >= fv.second) {
+      idx++;
+      if (idx >= first_vertices_.size())
+        throw std::runtime_error("Vertex handle not found in MBDirectAccess data");
+      fv = first_vertices_[idx];
+    }
+    return {idx, vert - fv.first};
+  }
+
   //! \brief Get the coordinates of a triangle as MOAB CartVect's
   inline std::array<moab::CartVect, 3> get_mb_coords(const EntityHandle& tri) {
 
@@ -57,13 +70,13 @@ public:
     }
 
     size_t conn_idx = element_stride_ * (tri - fe.first);
-    size_t i0 = vconn_[idx][conn_idx] - 1;
-    size_t i1 = vconn_[idx][conn_idx + 1] - 1;
-    size_t i2 = vconn_[idx][conn_idx + 2] - 1;
+    const auto [s0, o0] = vertex_index(vconn_[idx][conn_idx]);
+    const auto [s1, o1] = vertex_index(vconn_[idx][conn_idx + 1]);
+    const auto [s2, o2] = vertex_index(vconn_[idx][conn_idx + 2]);
 
-    moab::CartVect v0(tx_[idx][i0], ty_[idx][i0], tz_[idx][i0]);
-    moab::CartVect v1(tx_[idx][i1], ty_[idx][i1], tz_[idx][i1]);
-    moab::CartVect v2(tx_[idx][i2], ty_[idx][i2], tz_[idx][i2]);
+    moab::CartVect v0(tx_[s0][o0], ty_[s0][o0], tz_[s0][o0]);
+    moab::CartVect v1(tx_[s1][o1], ty_[s1][o1], tz_[s1][o1]);
+    moab::CartVect v2(tx_[s2][o2], ty_[s2][o2], tz_[s2][o2]);
 
     return {v0, v1, v2};
   }
@@ -81,13 +94,13 @@ public:
     }
 
     size_t conn_idx = element_stride_ * (tri - fe.first);
-    size_t i0 = vconn_[idx][conn_idx] - 1;
-    size_t i1 = vconn_[idx][conn_idx + 1] - 1;
-    size_t i2 = vconn_[idx][conn_idx + 2] - 1;
+    const auto [s0, o0] = vertex_index(vconn_[idx][conn_idx]);
+    const auto [s1, o1] = vertex_index(vconn_[idx][conn_idx + 1]);
+    const auto [s2, o2] = vertex_index(vconn_[idx][conn_idx + 2]);
 
-    Vec3da v0(tx_[idx][i0], ty_[idx][i0], tz_[idx][i0]);
-    Vec3da v1(tx_[idx][i1], ty_[idx][i1], tz_[idx][i1]);
-    Vec3da v2(tx_[idx][i2], ty_[idx][i2], tz_[idx][i2]);
+    Vec3da v0(tx_[s0][o0], ty_[s0][o0], tz_[s0][o0]);
+    Vec3da v1(tx_[s1][o1], ty_[s1][o1], tz_[s1][o1]);
+    Vec3da v2(tx_[s2][o2], ty_[s2][o2], tz_[s2][o2]);
 
     return {v0, v1, v2};
   }
@@ -106,6 +119,7 @@ private:
   int num_vertices_ {-1}; //!< Number of vertices in the manager
   int element_stride_ {-1}; //!< Number of vertices used by each element
   std::vector<std::pair<EntityHandle, size_t>> first_elements_; //!< Pairs of first element and length pairs for contiguous blocks of memory
+  std::vector<std::pair<EntityHandle, size_t>> first_vertices_;
   std::vector<const EntityHandle*> vconn_; //!< Storage array(s) for the connectivity array
   std::vector<double*> tx_; //!< Storage array(s) for vertex x coordinates
   std::vector<double*> ty_; //!< Storage array(s) for vertex y coordinates
