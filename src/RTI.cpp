@@ -593,7 +593,6 @@ void RayTracingInterface::shutdown() {
   for (auto& data_item: data_ptr_map) {
     rtcReleaseGeometry(data_item.first);
   }
-  buffer_storage.clear();
   data_ptr_map.clear();
 
   for (auto& scene : scene_map) {
