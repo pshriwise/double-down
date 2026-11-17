@@ -82,7 +82,8 @@ class RayTracingInterface {
 
   //! \brief Destructor. Clears all storage and removes all Embree scenes and geometries.
   ~RayTracingInterface() {
-                            shutdown();
+                          shutdown();
+                          buffer_storage.clear();
                          }
 
   // Public Functions
