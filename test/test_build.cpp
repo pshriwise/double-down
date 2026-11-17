@@ -76,5 +76,12 @@ int main() {
   if (dist == 0.0) { return 1; }
   if (surf == 0) { return 1; }
 
+  RTI->shutdown();
+
+  if (RTI->get_data_ptr_map().size() > 0) { return 1; }
+  if (RTI->get_scene_map().size() > 0) { return 1; }
+  if (RTI->get_global_scene() != nullptr) { return 1; }
+  if (RTI->get_device() != nullptr) { return 1; }
+
   return 0;
 }
