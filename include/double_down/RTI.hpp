@@ -83,7 +83,6 @@ class RayTracingInterface {
   //! \brief Destructor. Clears all storage and removes all Embree scenes and geometries.
   ~RayTracingInterface() {
                             shutdown();
-                            buffer_storage.clear();
                          }
 
   // Public Functions
@@ -335,6 +334,18 @@ class RayTracingInterface {
 
   //! \brief Accessor for the MBDirectAccess object.
   inline std::shared_ptr<MBDirectAccess> direct_access_manager() { return mdam; }
+
+  //! \brief Accessor for the device object
+  inline const RTCDevice get_device() const { return g_device; }
+
+  //! \brief Accessor for the global scene
+  inline const RTCScene get_global_scene() const { return global_scene; }
+
+  //! \brief Accessor for the scene map
+  inline const std::unordered_map<moab::EntityHandle, RTCScene>& get_scene_map() const { return scene_map; }
+
+  //! \brief Accessor for the data pointer map
+  inline const std::unordered_map<RTCGeometry, UserData>& get_data_ptr_map() const { return data_ptr_map; }
 
   // Member variables
   private:
