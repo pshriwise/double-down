@@ -589,8 +589,28 @@ void RayTracingInterface::closest(moab::EntityHandle volume,
 }
 
 void RayTracingInterface::shutdown() {
+
+  for (auto& data_item: data_ptr_map) {
+    rtcReleaseGeometry(data_item.first);
+  }
+  data_ptr_map.clear();
+
+  for (auto& scene : scene_map) {
+    if (scene.second) { rtcReleaseScene(scene.second); }
+  }
+  scene_map.clear();
+
+  if (global_scene) {
+    rtcReleaseScene(global_scene);
+    global_scene = nullptr;
+  }
+
   // release the device
-  if (g_device) { rtcReleaseDevice (g_device); }
+  if (g_device) {
+    rtcReleaseDevice (g_device);
+  }
+  g_device = nullptr;
+
 }
 
 void RayTracingInterface::fire(moab::EntityHandle volume, RTCDRayHit &rayhit)
